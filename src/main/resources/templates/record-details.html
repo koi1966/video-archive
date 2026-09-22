@@ -1,0 +1,285 @@
+
+<!DOCTYPE html>
+<html lang="ru"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <!-- CSRF для JavaScript -->
+    <meta name="_csrf"
+          th:content="${_csrf.token}">
+
+    <meta name="_csrf_header"
+          th:content="${_csrf.headerName}">
+
+    <title th:text="${record.title}">Запись</title>
+
+    <link rel="stylesheet"
+          href="/css/style.css">
+
+</head>
+
+<body>
+
+<nav>
+    <b>Видеоархив</b>
+
+    <a href="/records">Назад</a>
+
+    <a href="/change-password">
+        Сменить пароль
+    </a>
+</nav>
+
+
+<div class="box wide">
+
+    <!-- ===================================================== -->
+    <!-- ОСНОВНАЯ ИНФОРМАЦИЯ О ЗАПИСИ -->
+    <!-- ===================================================== -->
+
+    <h1 th:text="${record.title}">
+        Запись
+    </h1>
+
+
+    <p>
+        <a class="button"
+           th:href="@{'/records/' + ${record.id} + '/edit'}">
+            Редактировать запись
+        </a>
+    </p>
+
+
+    <p>
+        <b>Дата:</b>
+        <span th:text="${record.recordDate}">
+            дата
+        </span>
+    </p>
+
+
+    <p>
+        <b>Кто дал файлы:</b>
+        <span th:text="${record.fileProvider}">
+            источник
+        </span>
+    </p>
+
+
+    <p>
+        <b>Фирма:</b>
+        <span th:text="${record.companyName}">
+            фирма
+        </span>
+    </p>
+
+
+    <p th:if="${record.description != null}"
+       th:text="${record.description}">
+        описание
+    </p>
+
+
+    <!-- ===================================================== -->
+    <!-- ЗАГРУЗКА ВИДЕО -->
+    <!-- ===================================================== -->
+
+    <h2>
+        Копировать видео с флешки или диска
+    </h2>
+
+
+    <p>
+        Выберите один или несколько видеофайлов
+        в обычном окне Windows.
+    </p>
+
+
+    <input id="videoFiles"
+           type="file"
+           multiple
+           accept="video/*">
+
+
+    <!--
+        ВАЖНО:
+        record.id передаём через data-record-id.
+        Не используем:
+        onclick="uploadVideos('[[${record.id}]]')"
+    -->
+
+    <button id="uploadButton"
+            type="button"
+            th:data-record-id="${record.id}">
+
+        Скопировать выбранные файлы
+        на видеодиск
+
+    </button>
+
+
+    <!-- ===================================================== -->
+    <!-- ПРОГРЕСС ЗАГРУЗКИ -->
+    <!-- ===================================================== -->
+
+    <div id="uploadProgress"
+         hidden
+         style="margin-top: 15px;">
+
+        <progress id="uploadBar"
+                  value="0"
+                  max="100"
+                  style="width: 100%;">
+        </progress>
+
+        <div id="uploadStatus"></div>
+
+    </div>
+
+
+    <!-- JavaScript загрузки -->
+    <script src="/js/upload.js"></script>
+
+
+    <!-- ===================================================== -->
+    <!-- СПИСОК ВИДЕО -->
+    <!-- ===================================================== -->
+
+    <h2>
+        Видео этой записи
+    </h2>
+
+
+    <!-- Если видео нет -->
+
+    <div th:if="${record.videos == null or #lists.isEmpty(record.videos)}">
+
+        Видео пока не добавлено.
+
+    </div>
+
+
+    <!-- Если видео есть -->
+
+    <div th:if="${record.videos != null and !#lists.isEmpty(record.videos)}">
+
+        <div th:each="v : ${record.videos}"
+             class="video-card">
+
+
+            <!-- ------------------------------------------------- -->
+            <!-- ИНФОРМАЦИЯ О ФАЙЛЕ -->
+            <!-- ------------------------------------------------- -->
+
+            <div>
+
+                <b th:text="${v.originalName}">
+                    video.mp4
+                </b>
+
+
+                <span>
+                    —
+                    <span th:text="${v.size}">
+                        0
+                    </span>
+                    bytes
+                </span>
+
+            </div>
+
+
+            <!-- ------------------------------------------------- -->
+            <!-- КНОПКИ -->
+            <!-- ------------------------------------------------- -->
+
+            <div class="video-actions">
+
+
+                <!-- Смотреть -->
+                <a class="button"
+                   th:href="@{'/stream/' + ${record.id} + '/' + ${v.id}}"
+                   target="_blank">
+
+                    ▶ Смотреть в отдельном окне
+
+                </a>
+
+
+                <!-- Скачать -->
+                <a class="button"
+                   th:href="@{'/records/' + ${record.id} +
+                             '/videos/' + ${v.id} +
+                             '/download'}">
+
+                    Скачать
+
+                </a>
+
+
+                <!-- Удалить -->
+                <form class="inline"
+                      method="post"
+                      th:action="@{'/records/' + ${record.id} +
+                                   '/videos/' + ${v.id} +
+                                   '/delete'}">
+
+
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+
+
+                    <button type="submit"
+                            class="danger"
+                            onclick="return confirm('Удалить видео?');">
+
+                        Удалить
+
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- УДАЛЕНИЕ ВСЕЙ ЗАПИСИ -->
+    <!-- ===================================================== -->
+
+    <hr>
+
+
+    <form method="post"
+          th:action="@{'/records/' + ${record.id} + '/delete'}">
+
+
+        <input type="hidden"
+               th:name="${_csrf.parameterName}"
+               th:value="${_csrf.token}">
+
+
+        <button type="submit"
+                class="danger"
+                onclick="return confirm('Удалить запись и все ее видео?');">
+
+            Удалить запись
+
+        </button>
+
+    </form>
+
+
+</div>
+
+</body>
+
+</html>
+```

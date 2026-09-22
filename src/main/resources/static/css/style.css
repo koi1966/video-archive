@@ -1,0 +1,11 @@
+body{font-family:Arial,sans-serif;background:#f2f2f2;margin:0;color:#222}
+nav{background:#333;color:white;padding:12px 20px;display:flex;gap:18px;align-items:center}
+nav a{color:white;text-decoration:none}nav form{margin-left:auto}.box{background:white;max-width:520px;margin:40px auto;padding:25px;border-radius:8px;box-shadow:0 2px 10px #bbb}.wide{max-width:1100px}
+label{display:block;margin-top:14px;font-weight:bold}input,textarea{box-sizing:border-box;width:100%;padding:9px;margin-top:5px;border:1px solid #aaa;border-radius:4px}
+button,.button{display:inline-block;margin-top:15px;padding:9px 15px;border:0;border-radius:4px;background:#333;color:white;text-decoration:none;cursor:pointer}
+table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:9px;border:1px solid #ccc;text-align:left}
+.search{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.search button,.search .button{margin-top:5px}
+.error{color:#b00020}.qr{width:300px;height:300px;display:block}
+.video-card{border:1px solid #ccc;padding:12px;margin:10px 0}.inline{display:inline}.danger{background:#900}
+@media(max-width:800px){.search{grid-template-columns:1fr}nav{flex-wrap:wrap}}
+.video-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.video-actions .button{margin-top:0}

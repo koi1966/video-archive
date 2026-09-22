@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Записи</title><link rel="stylesheet" href="/css/style.css"></head>
+<body>
+<nav><b>Видеоархив</b><a href="/">Главная</a><a href="/records/new">Новая запись</a><a href="/change-password">Сменить пароль</a>
+<form method="post" action="/logout">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
+<div class="box wide">
+<h1>Записи</h1>
+<form method="get" class="search">
+<input name="provider" placeholder="Кто дал файлы" th:value="${provider}">
+<input name="company" placeholder="Фирма" th:value="${company}">
+<input name="title" placeholder="Название" th:value="${title}">
+<input type="date" name="date" th:value="${date}">
+<button>Искать</button><a class="button" href="/records">Сбросить</a>
+</form>
+<table>
+<thead><tr><th>Дата</th><th>Кто дал файлы</th><th>Фирма</th><th>Название</th><th>Видео</th><th></th></tr></thead>
+<tbody>
+<tr th:each="r : ${records}">
+<td th:text="${r.recordDate}"></td>
+<td th:text="${r.fileProvider}"></td>
+<td th:text="${r.companyName}"></td>
+<td th:text="${r.title}"></td>
+<td th:text="${#lists.size(r.videos)}"></td>
+<td><a th:href="@{'/records/' + ${r.id}}">Открыть</a></td>
+</tr>
+</tbody>
+</table>
+<p th:if="${#lists.isEmpty(records)}">Записей не найдено.</p>
+</div>
+</body>
+</html>
