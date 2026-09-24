@@ -2,12 +2,12 @@
 <html lang="ru">
 <head><meta charset="UTF-8"><title>Видеоархив</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav><b>Видеоархив</b><a href="/records">Записи</a><a th:if="${isAdmin}" href="/users">Пользователи</a><a href="/change-password">Сменить пароль</a>
+<nav><b>Відіоархів</b><a href="/records">Записи</a><a href="/change-password">Змінити пароль</a>
 <form method="post" action="/logout">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
 <div class="box wide">
-<h1>Видеоархив</h1>
-<p>Хранение метаданных: MongoDB. Видео: отдельный диск.</p>
+<h1>Відіоархів</h1>
+<p>Зберігання метаданих: MongoDB. Відео: окремий диск.</p>
 <a class="button" href="/records">Открыть архив</a>
 </div>
 </body>
