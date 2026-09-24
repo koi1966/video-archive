@@ -13,6 +13,10 @@ public class AppUser {
     private boolean enabled = true;
     private String totpSecret;
     private boolean totpEnabled;
+    private String surname;
+    private String firstName;
+    private String patronymic;
+    private String workAreaId;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -28,4 +32,16 @@ public class AppUser {
     public void setTotpSecret(String totpSecret) { this.totpSecret = totpSecret; }
     public boolean isTotpEnabled() { return totpEnabled; }
     public void setTotpEnabled(boolean totpEnabled) { this.totpEnabled = totpEnabled; }
+
+    public String getSurname() { return surname; }
+    public void setSurname(String surname) { this.surname = surname; }
+
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+
+    public String getPatronymic() { return patronymic; }
+    public void setPatronymic(String patronymic) { this.patronymic = patronymic; }
+
+    public String getWorkAreaId() { return workAreaId; }
+    public void setWorkAreaId(String workAreaId) { this.workAreaId = workAreaId; }
 }

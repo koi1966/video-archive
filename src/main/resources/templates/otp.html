@@ -3,38 +3,38 @@
 <head><meta charset="UTF-8"><title>Google Authenticator</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
 <div class="box">
-<h1>Двофакторний захист</h1>
+<h1>Двухфакторная защита</h1>
 
 <div th:if="${blocked}">
-    <p class="error"><b>Занадто багато неправильних кодів.</b></p>
-    <p>Перевірку тимчасово заблоковано. Спробуйте пізніше.</p>
-    <p>Орієнтовно залишилось: <span th:text="${secondsLeft}"></span> секунд.</p>
+    <p class="error"><b>Слишком много неправильных кодов.</b></p>
+    <p>Проверка временно заблокирована. Попробуйте позже.</p>
+    <p>Ориентировочно осталось: <span th:text="${secondsLeft}"></span> секунд.</p>
 </div>
 
 <div th:unless="${blocked}">
     <div th:if="${setup}">
         <p>1. Откройте Google Authenticator на телефоне.</p>
-        <p>2. Скануйте QR-код:</p>
+        <p>2. Сканируйте QR-код:</p>
         <img class="qr" th:src="'data:image/png;base64,' + ${qr}" alt="QR">
-        <p>Якщо сканування неможливе, секрет:</p>
+        <p>Если сканирование невозможно, секрет:</p>
         <code th:text="${secret}"></code>
-        <p>3. Введіть 6-значний код, що з'явився.</p>
+        <p>3. Введите появившийся 6-значный код.</p>
     </div>
 
     <div th:unless="${setup}">
-        <p>Введіть 6-значний код із Google Authenticator.</p>
+        <p>Введите 6-значный код из Google Authenticator.</p>
     </div>
 
     <form method="post" action="/2fa">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <input name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
                autofocus required>
-        <button>Підтвердити</button>
+        <button>Подтвердить</button>
     </form>
 
     <p class="error" th:if="${param.error}">
-        Помилковий код.
-        Залишилось спроб:
+        Неверный код.
+        Осталось попыток:
         <span th:text="${param.attemptsLeft}"></span>
     </p>
 </div>

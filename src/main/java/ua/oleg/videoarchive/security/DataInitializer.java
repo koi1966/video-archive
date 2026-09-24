@@ -6,30 +6,35 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ua.oleg.videoarchive.model.AppUser;
+import ua.oleg.videoarchive.model.WorkArea;
 import ua.oleg.videoarchive.repository.AppUserRepository;
+import ua.oleg.videoarchive.repository.WorkAreaRepository;
+
+import java.util.List;
 
 @Configuration
 public class DataInitializer {
     @Bean
-    CommandLineRunner initializeUsers(
+    CommandLineRunner initializeUsersAndWorkAreas(
             AppUserRepository repository,
+            WorkAreaRepository workAreaRepository,
             PasswordEncoder encoder,
             @Value("${app.admin.username}") String username,
             @Value("${app.admin.password}") String password) {
         return args -> {
+            initializeWorkAreas(workAreaRepository);
+
             var all = repository.findAll();
             boolean adminFound = false;
-
             for (AppUser user : all) {
+                boolean changed = false;
                 if (user.getRole() == null || user.getRole().isBlank()) {
                     user.setRole(user.getUsername().equals(username) ? "ADMIN" : "USER");
-                    // Documents created by the previous version had no enabled field.
                     user.setEnabled(true);
-                    repository.save(user);
+                    changed = true;
                 }
-                if (user.getUsername().equals(username)) {
-                    adminFound = true;
-                }
+                if (user.getUsername().equals(username)) adminFound = true;
+                if (changed) repository.save(user);
             }
 
             if (!adminFound) {
@@ -42,5 +47,29 @@ public class DataInitializer {
                 repository.save(user);
             }
         };
+    }
+
+    private void initializeWorkAreas(WorkAreaRepository repository) {
+        if (repository.count() > 0) return;
+
+        List<String> names = List.of(
+                "м. Житомир",
+                "Житомирський район",
+                "м. Бердичів",
+                "Бердичівський район",
+                "м. Коростень",
+                "Коростенський район",
+                "м. Звягель",
+                "Звягельський район",
+                "Барановський район",
+                "Брусилівський район"
+        );
+
+        for (String name : names) {
+            WorkArea area = new WorkArea();
+            area.setName(name);
+            area.setPatch("");
+            repository.save(area);
+        }
     }
 }
