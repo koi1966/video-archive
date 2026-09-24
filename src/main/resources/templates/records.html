@@ -2,7 +2,7 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head><meta charset="UTF-8"><title>Записи</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav><b>Видеоархив</b><a href="/">Главная</a><a href="/records/new">Новая запись</a><a href="/change-password">Сменить пароль</a>
+<nav><b>Видеоархив</b><a href="/">Главная</a><a href="/records/new">Новая запись</a><a th:if="${isAdmin}" href="/users">Пользователи</a><a href="/change-password">Сменить пароль</a>
 <form method="post" action="/logout">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
 <div class="box wide">

@@ -14,6 +14,7 @@ public class SecurityConfig {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/login", "/css/**", "/js/**").permitAll()
+                .requestMatchers("/users/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -31,8 +32,6 @@ public class SecurityConfig {
                 .permitAll()
             );
 
-        // CSRF remains enabled. Every POST form and the JavaScript chunk uploader
-        // supplies the CSRF token.
         return http.build();
     }
 

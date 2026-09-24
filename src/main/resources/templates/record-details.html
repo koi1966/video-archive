@@ -26,7 +26,7 @@
 <nav>
     <b>Видеоархив</b>
 
-    <a href="/records">Назад</a>
+    <a href="/records">Назад</a><a th:if="${isAdmin}" href="/users">Пользователи</a>
 
     <a href="/change-password">
         Сменить пароль

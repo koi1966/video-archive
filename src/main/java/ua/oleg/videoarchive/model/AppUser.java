@@ -9,6 +9,8 @@ public class AppUser {
     private String id;
     private String username;
     private String passwordHash;
+    private String role = "USER";
+    private boolean enabled = true;
     private String totpSecret;
     private boolean totpEnabled;
 
@@ -18,6 +20,10 @@ public class AppUser {
     public void setUsername(String username) { this.username = username; }
     public String getPasswordHash() { return passwordHash; }
     public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
     public String getTotpSecret() { return totpSecret; }
     public void setTotpSecret(String totpSecret) { this.totpSecret = totpSecret; }
     public boolean isTotpEnabled() { return totpEnabled; }

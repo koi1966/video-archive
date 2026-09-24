@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Настройка 2FA</title><link rel="stylesheet" href="/css/style.css"></head>
+<body>
+<nav><b>Видеоархив</b><a href="/users">Пользователи</a><a href="/records">Записи</a><form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
+<div class="box">
+<h1>Google Authenticator</h1>
+<p>Пользователь: <b th:text="${user.username}"></b></p>
+<p>Отсканируйте QR-код в Google Authenticator.</p>
+<img class="qr" th:src="'data:image/png;base64,' + ${qr}" alt="QR-код">
+<p>Если сканирование невозможно, введите этот секрет вручную:</p>
+<code th:text="${secret}"></code>
+<p>После этого пользователь при входе должен ввести текущий 6-значный код. После успешной проверки 2FA будет активирован.</p>
+<form method="post" th:action="@{'/users/' + ${user.id} + '/reset-2fa'}">
+<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+<button type="submit" class="danger" onclick="return confirm('Создать новый секрет Google Authenticator? Старый код перестанет работать.');">Сбросить и создать новый QR</button>
+</form>
+<p><a href="/users">← К списку пользователей</a></p>
+</div>
+</body>
+</html>
