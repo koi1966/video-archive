@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ua.oleg.videoarchive.model.VideoFile;
 import ua.oleg.videoarchive.model.VideoRecord;
+import ua.oleg.videoarchive.model.WorkArea;
 import ua.oleg.videoarchive.repository.VideoRecordRepository;
 
 import java.io.IOException;
@@ -53,12 +54,12 @@ public class VideoRecordService {
                 .orElseThrow(() -> new NoSuchElementException("Record not found"));
     }
 
-    public void addVideos(String recordId, MultipartFile[] files) throws IOException {
+    public void addVideos(String recordId, MultipartFile[] files, WorkArea workArea) throws IOException {
         VideoRecord record = find(recordId);
         if (files != null) {
             for (MultipartFile file : files) {
                 if (file != null && !file.isEmpty()) {
-                    record.getVideos().add(storage.store(file));
+                    record.getVideos().add(storage.store(file, workArea));
                 }
             }
         }
