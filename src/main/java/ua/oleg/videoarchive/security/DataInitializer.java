@@ -10,31 +10,34 @@ import ua.oleg.videoarchive.model.WorkArea;
 import ua.oleg.videoarchive.repository.AppUserRepository;
 import ua.oleg.videoarchive.repository.WorkAreaRepository;
 
-import java.util.List;
-
 @Configuration
 public class DataInitializer {
     @Bean
-    CommandLineRunner initializeUsersAndWorkAreas(
+    CommandLineRunner initializeUsers(
             AppUserRepository repository,
             WorkAreaRepository workAreaRepository,
             PasswordEncoder encoder,
             @Value("${app.admin.username}") String username,
             @Value("${app.admin.password}") String password) {
         return args -> {
-            initializeWorkAreas(workAreaRepository);
-
             var all = repository.findAll();
             boolean adminFound = false;
+
             for (AppUser user : all) {
                 boolean changed = false;
                 if (user.getRole() == null || user.getRole().isBlank()) {
                     user.setRole(user.getUsername().equals(username) ? "ADMIN" : "USER");
-                    user.setEnabled(true);
                     changed = true;
                 }
-                if (user.getUsername().equals(username)) adminFound = true;
-                if (changed) repository.save(user);
+                if (!user.isEnabled()) {
+                    // Do not overwrite an intentional disabled state.
+                }
+                if (user.getUsername().equals(username)) {
+                    adminFound = true;
+                }
+                if (changed) {
+                    repository.save(user);
+                }
             }
 
             if (!adminFound) {
@@ -46,13 +49,17 @@ public class DataInitializer {
                 user.setTotpEnabled(false);
                 repository.save(user);
             }
+
+            initializeDefaultWorkAreas(workAreaRepository);
         };
     }
 
-    private void initializeWorkAreas(WorkAreaRepository repository) {
-        if (repository.count() > 0) return;
+    private void initializeDefaultWorkAreas(WorkAreaRepository repository) {
+        if (repository.count() > 0) {
+            return;
+        }
 
-        List<String> names = List.of(
+        String[] names = {
                 "м. Житомир",
                 "Житомирський район",
                 "м. Бердичів",
@@ -63,7 +70,7 @@ public class DataInitializer {
                 "Звягельський район",
                 "Барановський район",
                 "Брусилівський район"
-        );
+        };
 
         for (String name : names) {
             WorkArea area = new WorkArea();

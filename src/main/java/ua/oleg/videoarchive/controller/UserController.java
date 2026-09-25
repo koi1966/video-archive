@@ -11,7 +11,9 @@ import ua.oleg.videoarchive.repository.AppUserRepository;
 import ua.oleg.videoarchive.repository.WorkAreaRepository;
 import ua.oleg.videoarchive.security.TotpService;
 
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -22,8 +24,10 @@ public class UserController {
     private final PasswordEncoder passwordEncoder;
     private final TotpService totp;
 
-    public UserController(AppUserRepository users, WorkAreaRepository workAreas,
-                          PasswordEncoder passwordEncoder, TotpService totp) {
+    public UserController(AppUserRepository users,
+                          WorkAreaRepository workAreas,
+                          PasswordEncoder passwordEncoder,
+                          TotpService totp) {
         this.users = users;
         this.workAreas = workAreas;
         this.passwordEncoder = passwordEncoder;
@@ -32,11 +36,19 @@ public class UserController {
 
     @GetMapping
     public String list(Model model) {
-        var areas = workAreas.findAll();
-        Map<String, WorkArea> workAreaById = new LinkedHashMap<>();
-        areas.forEach(a -> workAreaById.put(a.getId(), a));
-        model.addAttribute("users", users.findAll());
-        model.addAttribute("workAreaById", workAreaById);
+        List<WorkArea> areas = workAreas.findAll();
+        Map<String, WorkArea> areaById = new HashMap<>();
+        for (WorkArea area : areas) {
+            areaById.put(area.getId(), area);
+        }
+
+        List<UserRow> rows = new ArrayList<>();
+        for (AppUser user : users.findAll()) {
+            WorkArea area = user.getWorkAreaId() == null ? null : areaById.get(user.getWorkAreaId());
+            rows.add(new UserRow(user, area));
+        }
+
+        model.addAttribute("users", rows);
         return "users";
     }
 
@@ -45,7 +57,8 @@ public class UserController {
         AppUser user = new AppUser();
         user.setRole("USER");
         user.setEnabled(true);
-        return showUserForm(model, user);
+        addFormData(model, user);
+        return "user-form";
     }
 
     @PostMapping
@@ -58,30 +71,45 @@ public class UserController {
             @RequestParam(defaultValue = "") String surname,
             @RequestParam(defaultValue = "") String firstName,
             @RequestParam(defaultValue = "") String patronymic,
-            @RequestParam(required = false) String workAreaId,
+            @RequestParam(defaultValue = "") String workAreaId,
             Model model) throws Exception {
 
-        AppUser formUser = buildFormUser(username, role, enabled, surname, firstName, patronymic, workAreaId);
-        username = clean(username);
-        if (username.isBlank()) return formError(model, formUser, "Логин не может быть пустым.");
+        username = username == null ? "" : username.trim();
+        surname = surname == null ? "" : surname.trim();
+        firstName = firstName == null ? "" : firstName.trim();
+        patronymic = patronymic == null ? "" : patronymic.trim();
+        workAreaId = workAreaId == null ? "" : workAreaId.trim();
+
+        if (username.isBlank()) return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логин не может быть пустым.");
         if (!username.matches("[A-Za-z0-9._-]{3,50}")) {
-            return formError(model, formUser, "Логин: 3-50 символов, только латинские буквы, цифры, '.', '_' и '-'.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логин: 3-50 символов, только латинские буквы, цифры, '.', '_' и '-'.");
         }
         if (users.findByUsername(username).isPresent()) {
-            return formError(model, formUser, "Пользователь с таким логином уже существует.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пользователь с таким логином уже существует.");
         }
         if (password == null || password.length() < 8) {
-            return formError(model, formUser, "Пароль должен содержать минимум 8 символов.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароль должен содержать минимум 8 символов.");
         }
         if (!password.equals(confirmPassword)) {
-            return formError(model, formUser, "Пароли не совпадают.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароли не совпадают.");
         }
-        if (!validRole(role)) return formError(model, formUser, "Недопустимая роль.");
-        if (!validWorkArea(workAreaId)) return formError(model, formUser, "Выберите существующий район работы.");
+        if (!role.equals("USER") && !role.equals("ADMIN")) {
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Недопустимая роль.");
+        }
+        if (!workAreaId.isBlank() && !workAreas.existsById(workAreaId)) {
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Выбранный район работы не существует.");
+        }
 
         GoogleAuthenticatorKey key = totp.createKey();
-        AppUser user = buildFormUser(username, role, enabled, surname, firstName, patronymic, workAreaId);
+        AppUser user = new AppUser();
+        user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(password));
+        user.setRole(role);
+        user.setEnabled(enabled);
+        user.setSurname(surname);
+        user.setFirstName(firstName);
+        user.setPatronymic(patronymic);
+        user.setWorkAreaId(workAreaId.isBlank() ? null : workAreaId);
         user.setTotpSecret(key.getKey());
         user.setTotpEnabled(false);
         users.save(user);
@@ -91,7 +119,9 @@ public class UserController {
 
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable String id, Model model) {
-        return showUserForm(model, users.findById(id).orElseThrow());
+        AppUser user = users.findById(id).orElseThrow();
+        addFormData(model, user);
+        return "user-form";
     }
 
     @PostMapping("/{id}/edit")
@@ -102,31 +132,46 @@ public class UserController {
             @RequestParam(defaultValue = "") String surname,
             @RequestParam(defaultValue = "") String firstName,
             @RequestParam(defaultValue = "") String patronymic,
-            @RequestParam(required = false) String workAreaId,
+            @RequestParam(defaultValue = "") String workAreaId,
             Model model) {
         AppUser user = users.findById(id).orElseThrow();
-        user.setSurname(clean(surname));
-        user.setFirstName(clean(firstName));
-        user.setPatronymic(clean(patronymic));
-        user.setWorkAreaId(workAreaId);
+        surname = surname == null ? "" : surname.trim();
+        firstName = firstName == null ? "" : firstName.trim();
+        patronymic = patronymic == null ? "" : patronymic.trim();
+        workAreaId = workAreaId == null ? "" : workAreaId.trim();
+
+        if (!role.equals("USER") && !role.equals("ADMIN")) {
+            model.addAttribute("error", "Недопустимая роль.");
+            addFormData(model, user);
+            return "user-form";
+        }
+        if (!workAreaId.isBlank() && !workAreas.existsById(workAreaId)) {
+            model.addAttribute("error", "Выбранный район работы не существует.");
+            addFormData(model, user);
+            return "user-form";
+        }
+
         user.setRole(role);
         user.setEnabled(enabled);
-
-        if (!validRole(role)) return formError(model, user, "Недопустимая роль.");
-        if (!validWorkArea(workAreaId)) return formError(model, user, "Выберите существующий район работы.");
-
+        user.setSurname(surname);
+        user.setFirstName(firstName);
+        user.setPatronymic(patronymic);
+        user.setWorkAreaId(workAreaId.isBlank() ? null : workAreaId);
         users.save(user);
         return "redirect:/users";
     }
 
     @PostMapping("/{id}/password")
-    public String resetPassword(@PathVariable String id,
-                                @RequestParam String newPassword,
-                                @RequestParam String confirmPassword,
-                                Model model) {
+    public String resetPassword(
+            @PathVariable String id,
+            @RequestParam String newPassword,
+            @RequestParam String confirmPassword,
+            Model model) {
         AppUser user = users.findById(id).orElseThrow();
         if (newPassword == null || newPassword.length() < 8 || !newPassword.equals(confirmPassword)) {
-            return formError(model, user, "Новый пароль должен содержать минимум 8 символов, а подтверждение должно совпадать.");
+            model.addAttribute("error", "Новый пароль должен содержать минимум 8 символов, а подтверждение должно совпадать.");
+            addFormData(model, user);
+            return "user-form";
         }
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         users.save(user);
@@ -167,41 +212,45 @@ public class UserController {
         return "redirect:/users/" + id + "/2fa-setup";
     }
 
-    private String showUserForm(Model model, AppUser user) {
+    private void addFormData(Model model, AppUser user) {
         model.addAttribute("user", user);
         model.addAttribute("workAreas", workAreas.findAll());
-        return "user-form";
     }
 
-    private String formError(Model model, AppUser user, String error) {
-        model.addAttribute("user", user);
-        model.addAttribute("workAreas", workAreas.findAll());
+    private String formError(Model model, String username, String role, boolean enabled,
+                             String surname, String firstName, String patronymic,
+                             String workAreaId, String error) {
+        AppUser user = new AppUser();
+        user.setUsername(username);
+        user.setRole(role);
+        user.setEnabled(enabled);
+        user.setSurname(surname);
+        user.setFirstName(firstName);
+        user.setPatronymic(patronymic);
+        user.setWorkAreaId(workAreaId.isBlank() ? null : workAreaId);
+        addFormData(model, user);
         model.addAttribute("error", error);
         return "user-form";
     }
 
-    private AppUser buildFormUser(String username, String role, boolean enabled,
-                                  String surname, String firstName, String patronymic, String workAreaId) {
-        AppUser user = new AppUser();
-        user.setUsername(clean(username));
-        user.setRole(role);
-        user.setEnabled(enabled);
-        user.setSurname(clean(surname));
-        user.setFirstName(clean(firstName));
-        user.setPatronymic(clean(patronymic));
-        user.setWorkAreaId(workAreaId);
-        return user;
-    }
+    public static class UserRow {
+        private final AppUser user;
+        private final WorkArea workArea;
 
-    private boolean validRole(String role) {
-        return "USER".equals(role) || "ADMIN".equals(role);
-    }
+        public UserRow(AppUser user, WorkArea workArea) {
+            this.user = user;
+            this.workArea = workArea;
+        }
 
-    private boolean validWorkArea(String id) {
-        return id != null && !id.isBlank() && workAreas.existsById(id);
-    }
-
-    private String clean(String value) {
-        return value == null ? "" : value.trim();
+        public String getId() { return user.getId(); }
+        public String getUsername() { return user.getUsername(); }
+        public String getSurname() { return user.getSurname(); }
+        public String getFirstName() { return user.getFirstName(); }
+        public String getPatronymic() { return user.getPatronymic(); }
+        public String getRole() { return user.getRole(); }
+        public boolean isTotpEnabled() { return user.isTotpEnabled(); }
+        public boolean isEnabled() { return user.isEnabled(); }
+        public String getWorkAreaName() { return workArea == null ? "Не выбран" : workArea.getName(); }
+        public String getPatch() { return workArea == null || workArea.getPatch() == null ? "" : workArea.getPatch(); }
     }
 }

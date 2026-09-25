@@ -1,25 +1,25 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title th:text="${workArea.id == null ? 'Новый район' : 'Редактирование района'}">Район работы</title><link rel="stylesheet" href="/css/style.css"></head>
+<head><meta charset="UTF-8"><title th:text="${workArea.id == null ? 'Новый район' : 'Редактирование района'}">Район відезйомки</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav><b>Видеоархив</b><a href="/users">Пользователи</a><a href="/work-areas">Районы работы</a><a href="/records">Записи</a><a href="/change-password">Сменить пароль</a>
-<form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
+<nav><b>Відеоархів</b><a href="/users">Користувачі</a><a href="/work-areas">Райони відезйомки</a><a href="/records">Записи</a><a href="/change-password">Зміна паролю</a>
+<form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Вихід</button></form></nav>
 <div class="box">
-<h1 th:text="${workArea.id == null ? 'Добавить район работы' : 'Редактировать район работы'}"></h1>
+<h1 th:text="${workArea.id == null ? 'Додати район роботи' : 'Редагувати район роботи'}"></h1>
 <p class="error" th:if="${error}" th:text="${error}"></p>
 <form th:if="${workArea.id == null}" method="post" action="/work-areas">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<label>Район работы</label><input name="name" th:value="${workArea.name}" required maxlength="200">
-<label>Patch (путь к папке)</label><input name="patch" th:value="${workArea.patch}" maxlength="1000" placeholder="D:\VideoArchive\Zhytomyr">
-<button type="submit">Сохранить</button>
+<label>Район відезйомки</label><input name="name" th:value="${workArea.name}" required maxlength="200">
+<label>patch</label><input name="patch" th:value="${workArea.patch}" maxlength="1000" placeholder="D:\VideoArchive\Zhytomyr">
+<button type="submit">Зберегти</button>
 </form>
 <form th:if="${workArea.id != null}" method="post" th:action="@{'/work-areas/' + ${workArea.id} + '/edit'}">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<label>Район работы</label><input name="name" th:value="${workArea.name}" required maxlength="200">
-<label>Patch (путь к папке)</label><input name="patch" th:value="${workArea.patch}" maxlength="1000">
-<button type="submit">Сохранить</button>
+<label>Район відезйомки</label><input name="name" th:value="${workArea.name}" required maxlength="200">
+<label>patch</label><input name="patch" th:value="${workArea.patch}" maxlength="1000" placeholder="D:\VideoArchive\Zhytomyr">
+<button type="submit">Зберегти</button>
 </form>
-<p><a href="/work-areas">← К списку районов</a></p>
+<p><a href="/work-areas">← До списку районів</a></p>
 </div>
 </body>
 </html>

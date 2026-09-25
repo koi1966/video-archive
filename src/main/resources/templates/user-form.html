@@ -1,54 +1,54 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title th:text="${user.id == null ? 'Новый пользователь' : 'Редактирование пользователя'}">Пользователь</title><link rel="stylesheet" href="/css/style.css"></head>
+<head><meta charset="UTF-8"><title th:text="${user.id == null ? 'Новий користувач' : 'Редагування користувача'}">Користувач</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav><b>Видеоархив</b><a href="/users">Пользователи</a><a href="/work-areas">Районы работы</a><a href="/records">Записи</a><a href="/change-password">Сменить пароль</a>
-<form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
+<nav><b>Відеоархів</b><a href="/users">Користувачі</a><a href="/work-areas">Райони відеозапису</a><a href="/records">Записи</a><a href="/change-password">Змініть пароль</a>
+<form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Вихід</button></form></nav>
 <div class="box">
-<h1 th:text="${user.id == null ? 'Добавить пользователя' : 'Редактировать пользователя'}"></h1>
+<h1 th:text="${user.id == null ? 'Додати користувача' : 'Редагувати користувача'}"></h1>
 <p class="error" th:if="${error}" th:text="${error}"></p>
 <form th:if="${user.id == null}" method="post" action="/users">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<label>Фамилия</label><input name="surname" th:value="${user.surname}" maxlength="100">
-<label>Имя</label><input name="firstName" th:value="${user.firstName}" maxlength="100">
-<label>Отчество</label><input name="patronymic" th:value="${user.patronymic}" maxlength="100">
-<label>Район работы</label>
-<select name="workAreaId" required>
-<option value="">-- выберите район --</option>
-<option th:each="area : ${workAreas}" th:value="${area.id}" th:text="${area.name + ' — ' + area.patch}" th:selected="${area.id == user.workAreaId}"></option>
+<label>Прізвище</label><input name="surname" th:value="${user.surname}" maxlength="100">
+<label>Ім'я</label><input name="firstName" th:value="${user.firstName}" maxlength="100">
+<label>По батькові</label><input name="patronymic" th:value="${user.patronymic}" maxlength="100">
+<label>Район відеозапису</label>
+<select name="workAreaId">
+<option value="">Не выбран</option>
+<option th:each="wa : ${workAreas}" th:value="${wa.id}" th:text="${wa.name}" th:selected="${user.workAreaId == wa.id}"></option>
 </select>
-<label>Логин</label><input name="username" th:value="${user.username}" required maxlength="50">
+<label>Логін</label><input name="username" th:value="${user.username}" required maxlength="50">
 <label>Пароль</label><input type="password" name="password" minlength="8" required>
-<label>Повторите пароль</label><input type="password" name="confirmPassword" minlength="8" required>
+<label>Повторіть пароль</label><input type="password" name="confirmPassword" minlength="8" required>
 <label>Роль</label><select name="role"><option value="USER" th:selected="${user.role == 'USER'}">USER</option><option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option></select>
 <label><input type="checkbox" name="enabled" value="true" th:checked="${user.enabled}"> Активен</label>
-<button type="submit">Создать пользователя</button>
+<button type="submit">Створити користувача</button>
 </form>
 <form th:if="${user.id != null}" method="post" th:action="@{'/users/' + ${user.id} + '/edit'}">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<label>Фамилия</label><input name="surname" th:value="${user.surname}" maxlength="100">
-<label>Имя</label><input name="firstName" th:value="${user.firstName}" maxlength="100">
-<label>Отчество</label><input name="patronymic" th:value="${user.patronymic}" maxlength="100">
-<label>Район работы</label>
-<select name="workAreaId" required>
-<option value="">-- выберите район --</option>
-<option th:each="area : ${workAreas}" th:value="${area.id}" th:text="${area.name + ' — ' + area.patch}" th:selected="${area.id == user.workAreaId}"></option>
+<p><b>Логін:</b> <span th:text="${user.username}"></span></p>
+<label>Прізвище</label><input name="surname" th:value="${user.surname}" maxlength="100">
+<label>Ім'я</label><input name="firstName" th:value="${user.firstName}" maxlength="100">
+<label>По батькові</label><input name="patronymic" th:value="${user.patronymic}" maxlength="100">
+<label>Район відеозапису</label>
+<select name="workAreaId">
+<option value="">Не выбран</option>
+<option th:each="wa : ${workAreas}" th:value="${wa.id}" th:text="${wa.name}" th:selected="${user.workAreaId == wa.id}"></option>
 </select>
-<p><b>Логин:</b> <span th:text="${user.username}"></span></p>
 <label>Роль</label><select name="role"><option value="USER" th:selected="${user.role == 'USER'}">USER</option><option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option></select>
 <label><input type="checkbox" name="enabled" value="true" th:checked="${user.enabled}"> Активен</label>
-<button type="submit">Сохранить</button>
+<button type="submit">Зберегти</button>
 </form>
 <div th:if="${user.id != null}">
-<h2>Сброс пароля</h2>
+<h2>Скидання пароля</h2>
 <form method="post" th:action="@{'/users/' + ${user.id} + '/password'}">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<label>Новый пароль</label><input type="password" name="newPassword" minlength="8" required>
-<label>Повторите новый пароль</label><input type="password" name="confirmPassword" minlength="8" required>
-<button type="submit">Установить новый пароль</button>
+<label>Новий пароль</label><input type="password" name="newPassword" minlength="8" required>
+<label>Повторіть новий пароль</label><input type="password" name="confirmPassword" minlength="8" required>
+<button type="submit">Встановити новий пароль</button>
 </form>
 </div>
-<p><a href="/users">← К списку пользователей</a></p>
+<p><a href="/users">← До списку користувачів</a></p>
 </div>
 </body>
 </html>

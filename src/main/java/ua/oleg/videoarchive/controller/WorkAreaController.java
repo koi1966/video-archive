@@ -25,72 +25,88 @@ public class WorkAreaController {
     }
 
     @GetMapping("/new")
-    public String newArea(Model model) {
-        model.addAttribute("workArea", new WorkArea());
+    public String newWorkArea(Model model) {
+        WorkArea workArea = new WorkArea();
+        workArea.setPatch("");
+        model.addAttribute("workArea", workArea);
         return "work-area-form";
     }
 
     @PostMapping
     public String create(@RequestParam String name,
-                         @RequestParam(required = false, defaultValue = "") String patch,
+                         @RequestParam(defaultValue = "") String patch,
                          Model model) {
-        name = clean(name);
+        name = name == null ? "" : name.trim();
         patch = patch == null ? "" : patch.trim();
-        if (name.isBlank()) return formError(model, new WorkArea(), "Название района не может быть пустым.");
-        if (workAreas.existsByNameIgnoreCase(name)) {
-            WorkArea area = new WorkArea();
-            area.setName(name); area.setPatch(patch);
-            return formError(model, area, "Такой район уже существует.");
+
+        if (name.isBlank()) {
+            return formError(model, null, name, patch, "Название района не может быть пустым.");
         }
-        WorkArea area = new WorkArea();
-        area.setName(name);
-        area.setPatch(patch);
-        workAreas.save(area);
+        if (workAreas.findByNameIgnoreCase(name).isPresent()) {
+            return formError(model, null, name, patch, "Такой район уже существует.");
+        }
+
+        WorkArea workArea = new WorkArea();
+        workArea.setName(name);
+        workArea.setPatch(patch);
+        workAreas.save(workArea);
         return "redirect:/work-areas";
     }
 
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable String id, Model model) {
-        model.addAttribute("workArea", workAreas.findById(id).orElseThrow());
+        WorkArea workArea = workAreas.findById(id).orElseThrow();
+        model.addAttribute("workArea", workArea);
         return "work-area-form";
     }
 
     @PostMapping("/{id}/edit")
     public String update(@PathVariable String id,
                          @RequestParam String name,
-                         @RequestParam(required = false, defaultValue = "") String patch,
+                         @RequestParam(defaultValue = "") String patch,
                          Model model) {
-        WorkArea area = workAreas.findById(id).orElseThrow();
-        name = clean(name);
+        WorkArea workArea = workAreas.findById(id).orElseThrow();
+        name = name == null ? "" : name.trim();
         patch = patch == null ? "" : patch.trim();
-        if (name.isBlank()) return formError(model, area, "Название района не может быть пустым.");
-        if (workAreas.existsByNameIgnoreCaseAndIdNot(name, id)) {
-            area.setName(name); area.setPatch(patch);
-            return formError(model, area, "Такой район уже существует.");
+
+        if (name.isBlank()) {
+            return formError(model, id, name, patch, "Название района не может быть пустым.");
         }
-        area.setName(name);
-        area.setPatch(patch);
-        workAreas.save(area);
+
+        var existing = workAreas.findByNameIgnoreCase(name);
+        if (existing.isPresent() && !existing.get().getId().equals(id)) {
+            return formError(model, id, name, patch, "Такой район уже существует.");
+        }
+
+        workArea.setName(name);
+        workArea.setPatch(patch);
+        workAreas.save(workArea);
         return "redirect:/work-areas";
     }
 
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable String id, Model model) {
-        if (users.existsByWorkAreaId(id)) {
+        if (!workAreas.existsById(id)) {
+            return "redirect:/work-areas";
+        }
+
+        long assignedUsers = users.countByWorkAreaId(id);
+        if (assignedUsers > 0) {
             model.addAttribute("workAreas", workAreas.findAll());
-            model.addAttribute("error", "Нельзя удалить район: он назначен одному или нескольким пользователям.");
+            model.addAttribute("error", "Нельзя удалить район: он назначен пользователям (" + assignedUsers + ").");
             return "work-areas";
         }
+
         workAreas.deleteById(id);
         return "redirect:/work-areas";
     }
 
-    private String clean(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    private String formError(Model model, WorkArea area, String error) {
-        model.addAttribute("workArea", area);
+    private String formError(Model model, String id, String name, String patch, String error) {
+        WorkArea workArea = new WorkArea();
+        workArea.setId(id);
+        workArea.setName(name);
+        workArea.setPatch(patch);
+        model.addAttribute("workArea", workArea);
         model.addAttribute("error", error);
         return "work-area-form";
     }

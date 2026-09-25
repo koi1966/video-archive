@@ -2,30 +2,30 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head><meta charset="UTF-8"><title>Пользователи</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav><b>Видеоархив</b><a href="/">Главная</a><a href="/records">Записи</a><a href="/users">Пользователи</a><a href="/work-areas">Районы работы</a><a href="/change-password">Сменить пароль</a>
-<form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Выйти</button></form></nav>
+<nav><b>Відеоархів</b><a href="/">Головна</a><a href="/records">Записи</a><a href="/users">Користувачі</a><a href="/work-areas">Районы відеозапису</a><a href="/change-password">Змінити пароль</a>
+<form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Вихід</button></form></nav>
 <div class="box wide">
-<h1>Пользователи</h1>
-<p><a class="button" href="/users/new">Добавить пользователя</a> <a class="button" href="/work-areas">Справочник районов</a></p>
+<h1>Користувачі</h1>
+<p><a class="button" href="/users/new">Додати користувача</a> <a class="button" href="/work-areas">Курування районами</a></p>
 <table>
-<thead><tr><th>Фамилия</th><th>Имя</th><th>Отчество</th><th>Логин</th><th>Район работы</th><th>Patch</th><th>Роль</th><th>2FA</th><th>Статус</th><th>Действия</th></tr></thead>
+<thead><tr><th>Прізвище</th><th>Ім'я</th><th>По батькові</th><th>Логин</th><th>Район відеозйомки</th><th>Шляз збереження (patch)</th><th>Роль</th><th>2FA</th><th>Статус</th><th>Дія</th></tr></thead>
 <tbody>
 <tr th:each="u : ${users}">
 <td th:text="${u.surname}"></td>
 <td th:text="${u.firstName}"></td>
 <td th:text="${u.patronymic}"></td>
 <td th:text="${u.username}"></td>
-<td th:text="${workAreaById[u.workAreaId] != null ? workAreaById[u.workAreaId].name : 'Не выбран'}"></td>
-<td th:text="${workAreaById[u.workAreaId] != null ? workAreaById[u.workAreaId].patch : ''}"></td>
+<td th:text="${u.workAreaName}"></td>
+<td th:text="${u.patch}"></td>
 <td th:text="${u.role}"></td>
-<td th:text="${u.totpEnabled ? 'Включён' : 'Не активирован'}"></td>
-<td th:text="${u.enabled ? 'Активен' : 'Заблокирован'}"></td>
+<td th:text="${u.totpEnabled ? 'Активний' : 'Не активиний'}"></td>
+<td th:text="${u.enabled ? 'Активний' : 'Заблокований'}"></td>
 <td>
-<a class="button" th:href="@{'/users/' + ${u.id} + '/edit'}">Редактировать</a>
+<a class="button" th:href="@{'/users/' + ${u.id} + '/edit'}">Редагувати</a>
 <a class="button" th:href="@{'/users/' + ${u.id} + '/2fa-setup'}">2FA</a>
 <form class="inline" method="post" th:action="@{'/users/' + ${u.id} + '/toggle'}">
 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<button type="submit" th:text="${u.enabled ? 'Заблокировать' : 'Активировать'}"></button>
+<button type="submit" th:text="${u.enabled ? 'Заблокувати' : 'Активувати'}"></button>
 </form>
 </td>
 </tr>
