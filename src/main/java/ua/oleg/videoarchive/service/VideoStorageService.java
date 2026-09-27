@@ -55,11 +55,11 @@ public class VideoStorageService {
             WorkArea workArea) throws IOException {
 
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("Empty video file");
+            throw new IllegalArgumentException("Пустий відеофайл");
         }
 
         if (workArea == null) {
-            throw new IllegalArgumentException("WorkArea is required");
+            throw new IllegalArgumentException("Поле «Робоча зона» є обов’язковим.");
         }
 
         /*

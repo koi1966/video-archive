@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ru"
       xmlns:th="http://www.thymeleaf.org">
@@ -26,7 +25,12 @@
 <nav>
     <b>Відеоархів</b>
 
-    <a href="/records">Назад</a><a th:if="${isAdmin}" href="/users">Користувачі</a>
+    <a href="/records">Назад</a>
+
+    <a th:if="${isAdmin}"
+       href="/users">
+        Користувачі
+    </a>
 
     <a href="/change-password">
         Змінісь пароль
@@ -98,18 +102,42 @@
     </p>
 
 
+    <!--
+        Для ADMIN рабочая область должна быть выбрана явно.
+        Для обычного пользователя Controller использует
+        workAreaId, назначенный этому пользователю.
+    -->
+    <div th:if="${isAdmin}"
+         style="margin-bottom: 15px;">
+
+        <label for="workAreaId">
+            <b>Робоча зона:</b>
+        </label>
+
+        <select id="workAreaId"
+                name="workAreaId"
+                required
+                style="margin-left: 10px;">
+
+            <option value="">
+                -- Оберіть робочу зону --
+            </option>
+
+            <option th:each="area : ${workAreas}"
+                    th:value="${area.id}"
+                    th:text="${area.name}">
+            </option>
+
+        </select>
+
+    </div>
+
+
     <input id="videoFiles"
            type="file"
            multiple
            accept="video/*">
 
-
-    <!--
-        ВАЖНО:
-        record.id передаём через data-record-id.
-        Не используем:
-        onclick="uploadVideos('[[${record.id}]]')"
-    -->
 
     <button id="uploadButton"
             type="button"
@@ -153,8 +181,6 @@
     </h2>
 
 
-    <!-- Если видео нет -->
-
     <div th:if="${record.videos == null or #lists.isEmpty(record.videos)}">
 
         Відео поки не додано.
@@ -162,24 +188,16 @@
     </div>
 
 
-    <!-- Если видео есть -->
-
     <div th:if="${record.videos != null and !#lists.isEmpty(record.videos)}">
 
         <div th:each="v : ${record.videos}"
              class="video-card">
-
-
-            <!-- ------------------------------------------------- -->
-            <!-- ИНФОРМАЦИЯ О ФАЙЛЕ -->
-            <!-- ------------------------------------------------- -->
 
             <div>
 
                 <b th:text="${v.originalName}">
                     video.mp4
                 </b>
-
 
                 <span>
                     —
@@ -192,14 +210,8 @@
             </div>
 
 
-            <!-- ------------------------------------------------- -->
-            <!-- КНОПКИ -->
-            <!-- ------------------------------------------------- -->
-
             <div class="video-actions">
 
-
-                <!-- Смотреть -->
                 <a class="button"
                    th:href="@{'/stream/' + ${record.id} + '/' + ${v.id}}"
                    target="_blank">
@@ -209,7 +221,6 @@
                 </a>
 
 
-                <!-- Скачать -->
                 <a class="button"
                    th:href="@{'/records/' + ${record.id} +
                              '/videos/' + ${v.id} +
@@ -220,18 +231,15 @@
                 </a>
 
 
-                <!-- Удалить -->
                 <form class="inline"
                       method="post"
                       th:action="@{'/records/' + ${record.id} +
                                    '/videos/' + ${v.id} +
                                    '/delete'}">
 
-
                     <input type="hidden"
                            th:name="${_csrf.parameterName}"
                            th:value="${_csrf.token}">
-
 
                     <button type="submit"
                             class="danger"
@@ -260,11 +268,9 @@
     <form method="post"
           th:action="@{'/records/' + ${record.id} + '/delete'}">
 
-
         <input type="hidden"
                th:name="${_csrf.parameterName}"
                th:value="${_csrf.token}">
-
 
         <button type="submit"
                 class="danger"

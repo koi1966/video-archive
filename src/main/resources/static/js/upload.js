@@ -1,13 +1,13 @@
-
 const CHUNK_SIZE = 8 * 1024 * 1024;
 
 /*
- * Загрузка видеофайлов большими chunks.
+ * Загрузка видеофайлов chunks по 8 MiB.
  *
- * ID записи берём непосредственно из URL:
- * /records/6ab25499bdb64082cbdc3bcd
+ * Для ADMIN рабочая зона выбирается на странице записи
+ * и передаётся в каждом запросе как workAreaId.
  *
- * Поэтому Thymeleaf [[${record.id}]] здесь не нужен.
+ * Для обычного пользователя workAreaId можно не передавать:
+ * Controller сам возьмёт рабочую зону из текущего пользователя.
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const progress = document.getElementById('uploadProgress');
     const bar = document.getElementById('uploadBar');
     const status = document.getElementById('uploadStatus');
+    const workAreaSelect = document.getElementById('workAreaId');
 
     if (!input || !button || !progress || !bar || !status) {
         console.error('Не найдены элементы загрузки видео:', {
@@ -32,14 +33,12 @@ document.addEventListener('DOMContentLoaded', function () {
     console.log('upload.js загружен');
     console.log('Текущий URL:', window.location.pathname);
 
+
     /*
      * Получаем recordId из URL.
      *
      * Например:
-     * /records/6ab25499bdb64082cbdc3bcd
-     *
-     * Получаем:
-     * 6ab25499bdb64082cbdc3bcd
+     * /records/6ab8fee7b2d7da2a8a204a66
      */
     function getRecordId() {
 
@@ -49,7 +48,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const recordsIndex = parts.indexOf('records');
 
-        if (recordsIndex === -1 || recordsIndex + 1 >= parts.length) {
+        if (recordsIndex === -1 ||
+            recordsIndex + 1 >= parts.length) {
+
             return null;
         }
 
@@ -57,9 +58,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    /*
-     * Обработчик кнопки.
-     */
     button.addEventListener('click', async function () {
 
         console.log('Кнопка загрузки нажата');
@@ -68,7 +66,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         console.log('recordId:', recordId);
 
+
         if (!recordId) {
+
             status.textContent =
                 'Ошибка: не удалось определить ID записи.';
 
@@ -81,7 +81,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
 
-        if (!input.files || input.files.length === 0) {
+        if (!input.files ||
+            input.files.length === 0) {
 
             status.textContent =
                 'Выберите хотя бы один видеофайл.';
@@ -91,14 +92,38 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         /*
-         * CSRF
+         * Если на странице есть select workAreaId,
+         * значит это ADMIN.
+         *
+         * Для ADMIN выбор обязателен.
+         */
+        let workAreaId = null;
+
+        if (workAreaSelect) {
+
+            workAreaId =
+                workAreaSelect.value;
+
+            if (!workAreaId) {
+
+                status.textContent =
+                    'Оберіть робочу зону перед копіюванням.';
+
+                workAreaSelect.focus();
+
+                return;
+            }
+        }
+
+
+        /*
+         * CSRF.
          */
         const csrfTokenElement =
             document.querySelector('meta[name="_csrf"]');
 
         const csrfHeaderElement =
             document.querySelector('meta[name="_csrf_header"]');
-
 
         const csrfToken =
             csrfTokenElement
@@ -111,8 +136,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 : null;
 
 
-        console.log('CSRF token найден:', !!csrfToken);
-        console.log('CSRF header:', csrfHeader);
+        console.log(
+            'CSRF token найден:',
+            !!csrfToken
+        );
+
+        console.log(
+            'CSRF header:',
+            csrfHeader
+        );
+
+        console.log(
+            'workAreaId:',
+            workAreaId
+        );
 
 
         button.disabled = true;
@@ -136,7 +173,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 fileIndex++
             ) {
 
-                const file = input.files[fileIndex];
+                const file =
+                    input.files[fileIndex];
+
 
                 console.log(
                     'Начинаем загрузку файла:',
@@ -147,10 +186,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
                 /*
-                 * Уникальный ID одной загрузки.
+                 * Один uploadId на один файл.
                  *
-                 * Все chunks одного файла имеют
-                 * одинаковый uploadId.
+                 * Все chunks этого файла
+                 * используют один uploadId.
                  */
                 const uploadId =
                     crypto.randomUUID();
@@ -171,7 +210,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
                 /*
-                 * Загружаем chunks последовательно.
+                 * Chunks одного файла отправляем
+                 * последовательно.
                  */
                 for (
                     let chunkNumber = 0;
@@ -182,16 +222,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     const start =
                         chunkNumber * CHUNK_SIZE;
 
-
                     const end =
                         Math.min(
                             start + CHUNK_SIZE,
                             file.size
                         );
 
-
                     const chunk =
-                        file.slice(start, end);
+                        file.slice(
+                            start,
+                            end
+                        );
 
 
                     const form =
@@ -203,29 +244,41 @@ document.addEventListener('DOMContentLoaded', function () {
                         uploadId
                     );
 
-
                     form.append(
                         'fileName',
                         file.name
                     );
-
 
                     form.append(
                         'totalSize',
                         String(file.size)
                     );
 
-
                     form.append(
                         'chunkNumber',
                         String(chunkNumber)
                     );
 
-
                     form.append(
                         'totalChunks',
                         String(totalChunks)
                     );
+
+                    /*
+                     * Для ADMIN передаём выбранную
+                     * рабочую зону.
+                     *
+                     * Для обычного пользователя
+                     * поле не добавляем: Controller
+                     * возьмёт user.workAreaId.
+                     */
+                    if (workAreaId) {
+
+                        form.append(
+                            'workAreaId',
+                            workAreaId
+                        );
+                    }
 
 
                     form.append(
@@ -235,9 +288,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     );
 
 
-                    /*
-                     * HTTP headers.
-                     */
                     const headers = {};
 
 
@@ -251,13 +301,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
 
-                    /*
-                     * URL контроллера.
-                     *
-                     * Например:
-                     *
-                     * /records/6ab25499bdb64082cbdc3bcd/videos/chunk
-                     */
                     const url =
                         `/records/${recordId}/videos/chunk`;
 
@@ -267,7 +310,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         chunkNumber + 1,
                         '/',
                         totalChunks,
-                        url
+                        'размер:',
+                        chunk.size,
+                        'workAreaId:',
+                        workAreaId
                     );
 
 
@@ -293,9 +339,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         let errorText = '';
 
                         try {
+
                             errorText =
                                 await response.text();
+
                         } catch (e) {
+
                             errorText = '';
                         }
 
@@ -311,16 +360,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
 
-                    /*
-                     * Процент загрузки текущего файла.
-                     */
                     const percent =
                         Math.round(
                             (end / file.size) * 100
                         );
 
 
-                    bar.value = percent;
+                    bar.value =
+                        percent;
 
 
                     status.textContent =
@@ -329,66 +376,56 @@ document.addEventListener('DOMContentLoaded', function () {
                         `${file.name} — ${percent}%`;
 
 
-                    /*
-                     * Небольшая запись в консоль
-                     * для контроля.
-                     */
                     console.log(
                         `Файл ${file.name}: ` +
-                        `chunk ${chunkNumber + 1}/${totalChunks}, ` +
-    `${percent}%`
-);
-}
+                        `chunk ${chunkNumber + 1}/` +
+                        `${totalChunks}, ` +
+                        `${percent}%`
+                    );
+                }
 
 
-console.log(
-    'Файл полностью загружен:',
-    file.name
-);
-}
+                console.log(
+                    'Файл полностью загружен:',
+                    file.name
+                );
+            }
 
 
-/*
- * Все файлы загружены.
- */
-bar.value = 100;
+            bar.value = 100;
 
 
-status.textContent =
-    'Все файлы успешно скопированы на видеодиск.';
+            status.textContent =
+                'Все файлы успешно скопированы на видеодиск.';
 
 
-console.log(
-    'Загрузка всех файлов завершена'
-);
+            console.log(
+                'Загрузка всех файлов завершена'
+            );
 
 
-/*
- * Обновляем страницу через 800 мс,
- * чтобы появился новый файл.
- */
-setTimeout(
-    function () {
-        location.reload();
-    },
-    800
-);
+            setTimeout(
+                function () {
+                    location.reload();
+                },
+                800
+            );
 
 
-} catch (error) {
+        } catch (error) {
 
-    console.error(
-        'Ошибка загрузки:',
-        error
-    );
-
-
-    status.textContent =
-        'Ошибка копирования: ' +
-        error.message;
+            console.error(
+                'Ошибка загрузки:',
+                error
+            );
 
 
-    button.disabled = false;
-}
-});
+            status.textContent =
+                'Ошибка копирования: ' +
+                error.message;
+
+
+            button.disabled = false;
+        }
+    });
 });

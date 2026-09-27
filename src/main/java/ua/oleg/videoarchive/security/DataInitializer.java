@@ -134,24 +134,59 @@ public class DataInitializer {
         String[] names = {
                 "м. Житомир",
                 "Житомирський район",
-                "м. Бердичів",
-                "Бердичівський район",
+                "м. Коростишів",
+                "м. Радомишль",
+                "м. Чуднів",
                 "м. Коростень",
                 "Коростенський район",
+                "м. Малин",
+                "м. Овруч",
+                "м. Олевськ",
                 "м. Звягель",
                 "Звягельський район",
-                "Барановський район",
-                "Брусилівський район"
+                "м. Баранівка",
+                "м. Бердичів",
+                "Бердичівський район",
+                "м. Андрушівка"
         };
 
-        for (String name : names) {
+        String[] namesLat = {
+                "Zhytomyr",
+                "ZhytomyrRaion",
+                "Korostyshiv",
+                "Radomyshl",
+                "Chudniv",
+                "Korosten",
+                "KorostenRaion",
+                "Malyn",
+                "Ovruch",
+                "Olevsk",
+                "Zviahel",
+                "ZviahelRaion",
+                "Baranivka",
+                "Berdychiv",
+                "BerdychivRaion",
+                "Andrushivka"
+        };
 
+        // Перебираем оба массива по индексу i
+        for (int i = 0; i < names.length; i++) {
             WorkArea area = new WorkArea();
 
-            area.setName(name);
-            area.setPatch("");
+            area.setName(names[i]);
+            area.setPatch(namesLat[i]);
 
             repository.save(area);
         }
+
+//        for (String name : names) {
+//
+//            WorkArea area = new WorkArea();
+//
+//            area.setName(name);
+//            area.setPatch("");
+//
+//            repository.save(area);
+//        }
     }
 }
