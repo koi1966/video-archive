@@ -10,6 +10,8 @@ import ua.oleg.videoarchive.repository.AppUserRepository;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 public class TwoFactorController {
@@ -25,10 +27,12 @@ public class TwoFactorController {
 
     private final AppUserRepository users;
     private final TotpService totp;
+    private final BackupCodeService backupCodeService;
 
-    public TwoFactorController(AppUserRepository users, TotpService totp) {
+    public TwoFactorController(AppUserRepository users, TotpService totp, BackupCodeService backupCodeService) {
         this.users = users;
         this.totp = totp;
+        this.backupCodeService = backupCodeService;
     }
 
     @GetMapping("/2fa")
@@ -56,15 +60,30 @@ public class TwoFactorController {
             return "otp";
         }
 
-        if (!user.isTotpEnabled() && (user.getTotpSecret() == null || user.getTotpSecret().isBlank())) {
+        // Если 2FA не включен окончательно — генерируем QR и Backup-коды
+        if (!user.isTotpEnabled()) {
             try {
-                GoogleAuthenticatorKey key = totp.createKey();
-                user.setTotpSecret(key.getKey());
-                users.save(user);
+                String secret = user.getTotpSecret();
+                if (secret == null || secret.isBlank()) {
+                    GoogleAuthenticatorKey key = totp.createKey();
+                    secret = key.getKey();
+                    user.setTotpSecret(secret);
 
-                String uri = totp.otpAuthUri(username, key.getKey());
+                    // 1. Генерация резервных кодов
+                    List<String> rawCodes = backupCodeService.generateRawCodes();
+                    user.setBackupCodes(backupCodeService.hashCodes(rawCodes));
+                    users.save(user);
+
+                    // 2. Форматируем для UI в вид "XXXX-XXXX" для удобства чтения
+                    List<String> formattedCodes = rawCodes.stream()
+                            .map(code -> code.substring(0, 4) + "-" + code.substring(4))
+                            .collect(Collectors.toList());
+                    model.addAttribute("backupCodes", formattedCodes);
+                }
+
+                String uri = totp.otpAuthUri(username, secret);
                 model.addAttribute("qr", totp.qrBase64(uri));
-                model.addAttribute("secret", key.getKey());
+                model.addAttribute("secret", secret);
                 model.addAttribute("setup", true);
             } catch (Exception e) {
                 throw new IllegalStateException("Cannot create 2FA QR", e);
@@ -91,16 +110,36 @@ public class TwoFactorController {
 
         resetExpiredWindow(session, now);
 
+        if (code == null || code.isBlank()) {
+            return failedAttempt(session, now);
+        }
+
+        // Очищаем ввод от пробелов и дефисов ("1234-5678" -> "12345678")
+        String cleanCode = code.trim().replace("-", "").replace(" ", "");
+
         try {
-            if (code == null || !code.matches("\\d{6}")) {
-                return failedAttempt(session, now);
+            boolean isAuthorized = false;
+
+            // Вариант 1: Введен 6-значный TOTP-код приложения Google
+            if (cleanCode.matches("\\d{6}")) {
+                int value = Integer.parseInt(cleanCode);
+                if (totp.verify(user.getTotpSecret(), value)) {
+                    isAuthorized = true;
+                }
+            }
+            // Вариант 2: Введен 8-значный резервный код восстановления
+            else if (cleanCode.matches("\\d{8}")) {
+                if (backupCodeService.verifyAndConsume(user.getBackupCodes(), cleanCode)) {
+                    isAuthorized = true;
+                    users.save(user); // Фиксируем удаление использованного бэкап-кода
+                }
             }
 
-            int value = Integer.parseInt(code);
-
-            if (totp.verify(user.getTotpSecret(), value)) {
-                user.setTotpEnabled(true);
-                users.save(user);
+            if (isAuthorized) {
+                if (!user.isTotpEnabled()) {
+                    user.setTotpEnabled(true);
+                    users.save(user);
+                }
 
                 session.removeAttribute(FAIL_COUNT);
                 session.removeAttribute(WINDOW_START);

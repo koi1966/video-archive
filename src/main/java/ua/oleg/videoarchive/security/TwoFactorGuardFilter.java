@@ -17,7 +17,8 @@ public class TwoFactorGuardFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         String path = request.getServletPath();
 
-        if (path.equals("/login") || path.equals("/2fa")
+        // Добавлен /logout в исключения для предотвращения вечного редиректа при выходе
+        if (path.equals("/login") || path.equals("/2fa") || path.equals("/logout")
                 || path.startsWith("/css/") || path.startsWith("/js/")) {
             filterChain.doFilter(request, response);
             return;
@@ -27,6 +28,13 @@ public class TwoFactorGuardFilter extends OncePerRequestFilter {
         boolean ok = session != null && Boolean.TRUE.equals(session.getAttribute("TWO_FACTOR_OK"));
 
         if (!ok && request.getUserPrincipal() != null) {
+            // Мягкая обработка фоновых REST-запросов (если фронтенд использует JS-асинхронность)
+            String accept = request.getHeader("Accept");
+            if (accept != null && accept.contains("application/json")) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "2FA Required");
+                return;
+            }
+
             response.sendRedirect("/2fa");
             return;
         }

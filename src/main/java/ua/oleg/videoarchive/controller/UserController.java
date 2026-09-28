@@ -80,24 +80,24 @@ public class UserController {
         patronymic = patronymic == null ? "" : patronymic.trim();
         workAreaId = workAreaId == null ? "" : workAreaId.trim();
 
-        if (username.isBlank()) return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логин не может быть пустым.");
+        if (username.isBlank()) return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логін не може бути порожнім.");
         if (!username.matches("[A-Za-z0-9._-]{3,50}")) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логин: 3-50 символов, только латинские буквы, цифры, '.', '_' и '-'.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логін: 3-50 символів, лише латинські літери, цифри, '.', '_' и '-'.");
         }
         if (users.findByUsername(username).isPresent()) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пользователь с таким логином уже существует.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Користувач із таким логіном вже існує.");
         }
         if (password == null || password.length() < 8) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароль должен содержать минимум 8 символов.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароль повинен містити щонайменше 8 символів.");
         }
         if (!password.equals(confirmPassword)) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароли не совпадают.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Паролі не збігаються.");
         }
         if (!role.equals("USER") && !role.equals("ADMIN")) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Недопустимая роль.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Неприпустима роль.");
         }
         if (!workAreaId.isBlank() && !workAreas.existsById(workAreaId)) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Выбранный район работы не существует.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Вибраний район роботи не існує.");
         }
 
         GoogleAuthenticatorKey key = totp.createKey();
@@ -141,12 +141,12 @@ public class UserController {
         workAreaId = workAreaId == null ? "" : workAreaId.trim();
 
         if (!role.equals("USER") && !role.equals("ADMIN")) {
-            model.addAttribute("error", "Недопустимая роль.");
+            model.addAttribute("error", "Неприпустима роль.");
             addFormData(model, user);
             return "user-form";
         }
         if (!workAreaId.isBlank() && !workAreas.existsById(workAreaId)) {
-            model.addAttribute("error", "Выбранный район работы не существует.");
+            model.addAttribute("error", "Вибраний район роботи не існує.");
             addFormData(model, user);
             return "user-form";
         }
@@ -169,7 +169,7 @@ public class UserController {
             Model model) {
         AppUser user = users.findById(id).orElseThrow();
         if (newPassword == null || newPassword.length() < 8 || !newPassword.equals(confirmPassword)) {
-            model.addAttribute("error", "Новый пароль должен содержать минимум 8 символов, а подтверждение должно совпадать.");
+            model.addAttribute("error", "Новий пароль має містити щонайменше 8 символів, а підтвердження має збігатися.");
             addFormData(model, user);
             return "user-form";
         }
