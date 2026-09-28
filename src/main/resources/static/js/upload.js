@@ -2,10 +2,10 @@ const CHUNK_SIZE = 8 * 1024 * 1024;
 
 /*
  * Загрузка видеофайлов chunks по 8 MiB.
- *
+ *    .
  * Для ADMIN рабочая зона выбирается на странице записи
  * и передаётся в каждом запросе как workAreaId.
- *
+ *   .
  * Для обычного пользователя workAreaId можно не передавать:
  * Controller сам возьмёт рабочую зону из текущего пользователя.
  */
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const workAreaSelect = document.getElementById('workAreaId');
 
     if (!input || !button || !progress || !bar || !status) {
-        console.error('Не найдены элементы загрузки видео:', {
+        console.error('Не знайдено елементів завантаження відео:', {
             input,
             button,
             progress,
@@ -70,10 +70,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!recordId) {
 
             status.textContent =
-                'Ошибка: не удалось определить ID записи.';
+                'Помилка: не вдалося визначити ID запису.';
 
             console.error(
-                'Не удалось определить recordId из URL:',
+                'Не вдалося визначити recordId з URL:',
                 window.location.pathname
             );
 
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function () {
             input.files.length === 0) {
 
             status.textContent =
-                'Выберите хотя бы один видеофайл.';
+                'Виберіть хоча б один відеофайл.';
 
             return;
         }
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function () {
         bar.value = 0;
 
         status.textContent =
-            'Начинаем загрузку...';
+            'Починаємо завантаження...';
 
 
         try {
@@ -396,11 +396,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
             status.textContent =
-                'Все файлы успешно скопированы на видеодиск.';
+                'Усі файли успішно скопійовані на відеодиск.';
 
 
             console.log(
-                'Загрузка всех файлов завершена'
+                'Завантаження всіх файлів завершено'
             );
 
 
