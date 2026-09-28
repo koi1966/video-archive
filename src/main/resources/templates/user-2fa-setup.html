@@ -1,21 +1,63 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Налаштування 2FA</title><link rel="stylesheet" href="/css/style.css"></head>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Налаштування 2FA</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
 <body>
-<nav><b>Відеоархів</b><a href="/users">Користувачі</a><a href="/records">Записи</a><form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Вихід</button></form></nav>
+<nav>
+    <b>Відеоархів</b>
+    <a href="/users">Користувачі</a>
+    <a href="/work-areas">Райони відеозапису</a>
+    <a href="/records">Записи</a>
+    <a href="/change-password">Змінити пароль</a>
+    <form method="post" action="/logout">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button>Вихід</button>
+    </form>
+</nav>
+
 <div class="box">
-<h1>Google Authenticator</h1>
-<p>Користувач: <b th:text="${user.username}"></b></p>
-<p>Отскануйте QR-код в Google Authenticator.</p>
-<img class="qr" th:src="'data:image/png;base64,' + ${qr}" alt="QR-код">
-<p>Якщо сканування неможливе, введіть цей секрет вручну:</p>
-<code th:text="${secret}"></code>
-<p>Після цього користувач має ввести поточний 6-значний код. Після успішної перевірки 2FA буде активовано.</p>
-<form method="post" th:action="@{'/users/' + ${user.id} + '/reset-2fa'}">
-<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-<button type="submit" class="danger" onclick="return confirm('Створити новий секрет Google Authenticator? Старий код перестане працювати.');">Скинути та створити новий QR</button>
-</form>
-<p><a href="/users">← До списку користувачів</a></p>
+    <h1>Google Authenticator</h1>
+    <p>Користувач: <b th:text="${user.username}"></b></p>
+
+    <p>Відскануйте QR-код у Google Authenticator.</p>
+    <img class="qr" th:src="'data:image/png;base64,' + ${qr}" alt="QR-код">
+
+    <p>Якщо сканування неможливе, введіть секрет вручну:</p>
+    <code th:text="${secret}"></code>
+
+    <p>
+        Після налаштування користувач повинен ввести поточний 6-значний код.
+        Після успішної перевірки 2FA буде активовано.
+    </p>
+
+    <div th:if="${backupCodesFirstShown}" class="box">
+        <h2>Резервні коди</h2>
+        <p class="error"><b>Ці коди показуються лише зараз. Обов'язково збережіть їх.</b></p>
+        <p>Кожен код одноразовий. MongoDB зберігає тільки BCrypt-хеші кодів.</p>
+        <ul>
+            <li th:each="code : ${backupCodes}" th:text="${code}"></li>
+        </ul>
+    </div>
+
+    <form method="post" th:action="@{'/users/' + ${user.id} + '/reset-2fa'}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit" class="danger"
+                onclick="return confirm('Створити новий секрет Google Authenticator і нові резервні коди? Старі коди перестануть працювати.');">
+            Скинути 2FA і створити новий QR
+        </button>
+    </form>
+
+    <form method="post" th:action="@{'/users/' + ${user.id} + '/regenerate-backup-codes'}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit" onclick="return confirm('Старі резервні коди перестануть працювати. Створити нові?');">
+            Створити нові резервні коди
+        </button>
+    </form>
+
+    <p><a href="/users">← До списку користувачів</a></p>
 </div>
 </body>
 </html>

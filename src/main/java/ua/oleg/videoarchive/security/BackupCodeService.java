@@ -2,53 +2,84 @@ package ua.oleg.videoarchive.security;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+/**
+ * Generates and verifies one-time recovery codes for two-factor authentication.
+ * Only BCrypt hashes are stored in MongoDB; raw codes are returned once to the caller.
+ */
 @Service
 public class BackupCodeService {
-    private final PasswordEncoder passwordEncoder;
+    private static final int CODE_COUNT = 8;
+    private static final int CODE_LENGTH = 8;
+
     private final SecureRandom random = new SecureRandom();
+    private final PasswordEncoder passwordEncoder;
 
     public BackupCodeService(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
 
-    /**
-     * Генерирует 8 сырых текстовых кодов, состоящих из 8 цифр.
-     */
     public List<String> generateRawCodes() {
-        List<String> codes = new ArrayList<>();
-        for (int i = 0; i < 8; i++) {
-            int num = random.nextInt(90000000) + 10000000; // Строго 8 цифр
-            codes.add(String.valueOf(num));
+        List<String> codes = new ArrayList<>(CODE_COUNT);
+        for (int i = 0; i < CODE_COUNT; i++) {
+            codes.add(generateCode());
         }
         return codes;
     }
 
-    /**
-     * Хэширует коды с помощью BCrypt для безопасного сохранения в БД.
-     */
     public Set<String> hashCodes(List<String> rawCodes) {
-        return rawCodes.stream()
-                .map(passwordEncoder::encode)
-                .collect(Collectors.toSet());
+        Set<String> hashes = new HashSet<>();
+        for (String code : rawCodes) {
+            hashes.add(passwordEncoder.encode(code));
+        }
+        return hashes;
     }
 
     /**
-     * Сверяет введенный пользователем сырой код со списком хэшей в БД.
-     * Если код совпал, он удаляется из коллекции (принцип одноразовости).
+     * Verifies a recovery code and removes the matching hash when successful.
      */
-    public boolean verifyAndConsume(Set<String> hashedCodes, String rawInputCode) {
-        for (String hashedCode : hashedCodes) {
-            if (passwordEncoder.matches(rawInputCode, hashedCode)) {
-                hashedCodes.remove(hashedCode);
+    public boolean verifyAndConsume(String rawCode, Set<String> storedHashes) {
+        if (rawCode == null || storedHashes == null || storedHashes.isEmpty()) {
+            return false;
+        }
+
+        String normalized = normalize(rawCode);
+        if (!normalized.matches("\\d{8}")) {
+            return false;
+        }
+
+        for (String hash : new ArrayList<>(storedHashes)) {
+            if (passwordEncoder.matches(normalized, hash)) {
+                storedHashes.remove(hash);
                 return true;
             }
         }
         return false;
+    }
+
+    public String normalize(String code) {
+        if (code == null) {
+            return "";
+        }
+        return code.replace("-", "").replaceAll("\\s+", "").trim();
+    }
+
+    public String displayCode(String code) {
+        String normalized = normalize(code);
+        if (normalized.length() != CODE_LENGTH) {
+            return normalized;
+        }
+        return normalized.substring(0, 4) + "-" + normalized.substring(4);
+    }
+
+    private String generateCode() {
+        int value = random.nextInt(100_000_000);
+        return String.format("%08d", value);
     }
 }

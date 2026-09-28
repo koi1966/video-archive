@@ -66,6 +66,10 @@ public class DataInitializer {
                         // Сбрасываем двухфакторную аутентификацию
                         user.setTotpEnabled(false);
                         user.setTotpSecret(null);
+                        user.setBackupCodes(new java.util.HashSet<>());
+                        user.setFailedTwoFactorAttempts(0);
+                        user.setTwoFactorWindowStart(null);
+                        user.setTwoFactorBlockUntil(null);
 
                         repository.save(user);
 

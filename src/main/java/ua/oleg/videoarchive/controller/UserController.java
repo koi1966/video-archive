@@ -9,6 +9,7 @@ import ua.oleg.videoarchive.model.AppUser;
 import ua.oleg.videoarchive.model.WorkArea;
 import ua.oleg.videoarchive.repository.AppUserRepository;
 import ua.oleg.videoarchive.repository.WorkAreaRepository;
+import ua.oleg.videoarchive.security.BackupCodeService;
 import ua.oleg.videoarchive.security.TotpService;
 
 import java.util.ArrayList;
@@ -23,15 +24,18 @@ public class UserController {
     private final WorkAreaRepository workAreas;
     private final PasswordEncoder passwordEncoder;
     private final TotpService totp;
+    private final BackupCodeService backupCodes;
 
     public UserController(AppUserRepository users,
                           WorkAreaRepository workAreas,
                           PasswordEncoder passwordEncoder,
-                          TotpService totp) {
+                          TotpService totp,
+                          BackupCodeService backupCodes) {
         this.users = users;
         this.workAreas = workAreas;
         this.passwordEncoder = passwordEncoder;
         this.totp = totp;
+        this.backupCodes = backupCodes;
     }
 
     @GetMapping
@@ -80,24 +84,24 @@ public class UserController {
         patronymic = patronymic == null ? "" : patronymic.trim();
         workAreaId = workAreaId == null ? "" : workAreaId.trim();
 
-        if (username.isBlank()) return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логін не може бути порожнім.");
+        if (username.isBlank()) return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логин не может быть пустым.");
         if (!username.matches("[A-Za-z0-9._-]{3,50}")) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логін: 3-50 символів, лише латинські літери, цифри, '.', '_' и '-'.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Логин: 3-50 символов, только латинские буквы, цифры, '.', '_' и '-'.");
         }
         if (users.findByUsername(username).isPresent()) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Користувач із таким логіном вже існує.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пользователь с таким логином уже существует.");
         }
         if (password == null || password.length() < 8) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароль повинен містити щонайменше 8 символів.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароль должен содержать минимум 8 символов.");
         }
         if (!password.equals(confirmPassword)) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Паролі не збігаються.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Пароли не совпадают.");
         }
         if (!role.equals("USER") && !role.equals("ADMIN")) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Неприпустима роль.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Недопустимая роль.");
         }
         if (!workAreaId.isBlank() && !workAreas.existsById(workAreaId)) {
-            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Вибраний район роботи не існує.");
+            return formError(model, username, role, enabled, surname, firstName, patronymic, workAreaId, "Выбранный район работы не существует.");
         }
 
         GoogleAuthenticatorKey key = totp.createKey();
@@ -141,12 +145,12 @@ public class UserController {
         workAreaId = workAreaId == null ? "" : workAreaId.trim();
 
         if (!role.equals("USER") && !role.equals("ADMIN")) {
-            model.addAttribute("error", "Неприпустима роль.");
+            model.addAttribute("error", "Недопустимая роль.");
             addFormData(model, user);
             return "user-form";
         }
         if (!workAreaId.isBlank() && !workAreas.existsById(workAreaId)) {
-            model.addAttribute("error", "Вибраний район роботи не існує.");
+            model.addAttribute("error", "Выбранный район работы не существует.");
             addFormData(model, user);
             return "user-form";
         }
@@ -169,7 +173,7 @@ public class UserController {
             Model model) {
         AppUser user = users.findById(id).orElseThrow();
         if (newPassword == null || newPassword.length() < 8 || !newPassword.equals(confirmPassword)) {
-            model.addAttribute("error", "Новий пароль має містити щонайменше 8 символів, а підтвердження має збігатися.");
+            model.addAttribute("error", "Новый пароль должен содержать минимум 8 символов, а подтверждение должно совпадать.");
             addFormData(model, user);
             return "user-form";
         }
@@ -189,12 +193,31 @@ public class UserController {
     @GetMapping("/{id}/2fa-setup")
     public String setup2fa(@PathVariable String id, Model model) throws Exception {
         AppUser user = users.findById(id).orElseThrow();
+        boolean changed = false;
+
         if (user.getTotpSecret() == null || user.getTotpSecret().isBlank()) {
             GoogleAuthenticatorKey key = totp.createKey();
             user.setTotpSecret(key.getKey());
             user.setTotpEnabled(false);
+            changed = true;
+        }
+
+        // For an old user without recovery codes, create them once and show the raw
+        // values only on this page. MongoDB receives only BCrypt hashes.
+        if (user.getBackupCodes().isEmpty()) {
+            List<String> rawCodes = backupCodes.generateRawCodes();
+            user.setBackupCodes(backupCodes.hashCodes(rawCodes));
+            model.addAttribute("backupCodes", rawCodes.stream()
+                    .map(backupCodes::displayCode)
+                    .toList());
+            model.addAttribute("backupCodesFirstShown", true);
+            changed = true;
+        }
+
+        if (changed) {
             users.save(user);
         }
+
         String uri = totp.otpAuthUri(user.getUsername(), user.getTotpSecret());
         model.addAttribute("user", user);
         model.addAttribute("qr", totp.qrBase64(uri));
@@ -208,6 +231,18 @@ public class UserController {
         GoogleAuthenticatorKey key = totp.createKey();
         user.setTotpSecret(key.getKey());
         user.setTotpEnabled(false);
+        user.setBackupCodes(new java.util.HashSet<>());
+        user.setFailedTwoFactorAttempts(0);
+        user.setTwoFactorWindowStart(null);
+        user.setTwoFactorBlockUntil(null);
+        users.save(user);
+        return "redirect:/users/" + id + "/2fa-setup";
+    }
+
+    @PostMapping("/{id}/regenerate-backup-codes")
+    public String regenerateBackupCodes(@PathVariable String id) {
+        AppUser user = users.findById(id).orElseThrow();
+        user.setBackupCodes(new java.util.HashSet<>());
         users.save(user);
         return "redirect:/users/" + id + "/2fa-setup";
     }
