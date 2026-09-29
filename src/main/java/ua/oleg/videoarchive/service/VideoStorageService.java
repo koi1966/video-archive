@@ -44,10 +44,10 @@ public class VideoStorageService {
 
     /**
      * Сохраняет видео в patch выбранного WorkArea.
-     *
+     *.
      * Для обычного пользователя WorkArea определяется
      * контроллером по текущему пользователю.
-     *
+     *.
      * Для администратора WorkArea передается выбранный им.
      */
     public VideoFile store(
@@ -105,11 +105,11 @@ public class VideoStorageService {
 
         /*
          * В VideoFile сохраняем:
-         *
+         * .
          * workAreaId  - район, которому принадлежит видео
          * storagePatch - patch, который использовался
          * relativePath - имя файла относительно patch
-         *
+         * .
          * Благодаря storagePatch изменение patch
          * района в будущем не сломает старые видео.
          */
@@ -128,15 +128,15 @@ public class VideoStorageService {
 
     /**
      * Возвращает физический путь видео.
-     *
+     * .
      * Новые видео используют storagePatch,
      * который был сохранён в момент загрузки.
-     *
+     * .
      * Поэтому изменение WorkArea.patch влияет
      * только на НОВЫЕ видео.
-     *
+     * .
      * Старые видео продолжают использовать старый patch.
-     *
+     * .
      * Старые VideoFile без workAreaId и storagePatch
      * используют video.storage.path.
      */
@@ -156,7 +156,7 @@ public class VideoStorageService {
 
         /*
          * В первую очередь используем storagePatch.
-         *
+         * .
          * Это важно:
          * если администратор изменил patch района,
          * старое видео должно остаться доступным
@@ -172,10 +172,10 @@ public class VideoStorageService {
 
             /*
              * Совместимость с промежуточными данными:
-             *
+             * .
              * workAreaId уже есть,
              * но storagePatch ещё отсутствует.
-             *
+             * .
              * Здесь НЕ вызываем requireRoot(),
              * потому что resolve() не должен создавать каталог
              * и не должен выбрасывать checked IOException.
@@ -201,7 +201,7 @@ public class VideoStorageService {
 
     /**
      * Используется ChunkUploadService.
-     *
+     * .
      * Возвращает patch выбранного WorkArea
      * и создаёт каталог, если его ещё нет.
      */
@@ -212,7 +212,7 @@ public class VideoStorageService {
     /**
      * Проверяет WorkArea, получает его patch
      * и создаёт каталог.
-     *
+     * .
      * Этот метод используется при ЗАПИСИ файла.
      */
     private Path requireRoot(WorkArea workArea) throws IOException {
@@ -226,9 +226,9 @@ public class VideoStorageService {
 
     /**
      * Получает путь из WorkArea.
-     *
+     * .
      * Этот метод НЕ создаёт каталог.
-     *
+     *.
      * Поэтому его можно безопасно использовать
      * внутри resolve().
      */

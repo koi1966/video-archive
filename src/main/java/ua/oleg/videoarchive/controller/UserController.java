@@ -189,12 +189,19 @@ public class UserController {
     @GetMapping("/{id}/2fa-setup")
     public String setup2fa(@PathVariable String id, Model model) throws Exception {
         AppUser user = users.findById(id).orElseThrow();
+        boolean changed = false;
+
         if (user.getTotpSecret() == null || user.getTotpSecret().isBlank()) {
             GoogleAuthenticatorKey key = totp.createKey();
             user.setTotpSecret(key.getKey());
             user.setTotpEnabled(false);
+            changed = true;
+        }
+
+        if (changed) {
             users.save(user);
         }
+
         String uri = totp.otpAuthUri(user.getUsername(), user.getTotpSecret());
         model.addAttribute("user", user);
         model.addAttribute("qr", totp.qrBase64(uri));
@@ -208,6 +215,9 @@ public class UserController {
         GoogleAuthenticatorKey key = totp.createKey();
         user.setTotpSecret(key.getKey());
         user.setTotpEnabled(false);
+        user.setFailedTwoFactorAttempts(0);
+        user.setTwoFactorWindowStart(null);
+        user.setTwoFactorBlockUntil(null);
         users.save(user);
         return "redirect:/users/" + id + "/2fa-setup";
     }

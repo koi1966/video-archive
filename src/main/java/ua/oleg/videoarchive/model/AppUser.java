@@ -3,6 +3,8 @@ package ua.oleg.videoarchive.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
+
 @Document("users")
 public class AppUser {
     @Id
@@ -17,6 +19,12 @@ public class AppUser {
     private String workAreaId;
     private String totpSecret;
     private boolean totpEnabled;
+
+
+    /** Persistent 2FA brute-force protection. */
+    private int failedTwoFactorAttempts;
+    private Instant twoFactorWindowStart;
+    private Instant twoFactorBlockUntil;
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -40,4 +48,12 @@ public class AppUser {
     public void setTotpSecret(String totpSecret) { this.totpSecret = totpSecret; }
     public boolean isTotpEnabled() { return totpEnabled; }
     public void setTotpEnabled(boolean totpEnabled) { this.totpEnabled = totpEnabled; }
+
+
+    public int getFailedTwoFactorAttempts() { return failedTwoFactorAttempts; }
+    public void setFailedTwoFactorAttempts(int failedTwoFactorAttempts) { this.failedTwoFactorAttempts = failedTwoFactorAttempts; }
+    public Instant getTwoFactorWindowStart() { return twoFactorWindowStart; }
+    public void setTwoFactorWindowStart(Instant twoFactorWindowStart) { this.twoFactorWindowStart = twoFactorWindowStart; }
+    public Instant getTwoFactorBlockUntil() { return twoFactorBlockUntil; }
+    public void setTwoFactorBlockUntil(Instant twoFactorBlockUntil) { this.twoFactorBlockUntil = twoFactorBlockUntil; }
 }

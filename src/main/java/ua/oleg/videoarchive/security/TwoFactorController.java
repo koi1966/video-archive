@@ -3,13 +3,16 @@ package ua.oleg.videoarchive.security;
 import com.warrenstrange.googleauth.GoogleAuthenticatorKey;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import ua.oleg.videoarchive.model.AppUser;
 import ua.oleg.videoarchive.repository.AppUserRepository;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Controller
 public class TwoFactorController {
@@ -19,142 +22,172 @@ public class TwoFactorController {
 
     private static final String AUTH_USER = "AUTH_USER";
     private static final String TWO_FACTOR_OK = "TWO_FACTOR_OK";
-    private static final String FAIL_COUNT = "TOTP_FAIL_COUNT";
-    private static final String WINDOW_START = "TOTP_WINDOW_START";
-    private static final String BLOCK_UNTIL = "TOTP_BLOCK_UNTIL";
 
     private final AppUserRepository users;
     private final TotpService totp;
+    private final ConcurrentHashMap<String, Object> userLocks = new ConcurrentHashMap<>();
 
-    public TwoFactorController(AppUserRepository users, TotpService totp) {
+    public TwoFactorController(AppUserRepository users,
+                               TotpService totp) {
         this.users = users;
         this.totp = totp;
     }
 
     @GetMapping("/2fa")
     public String twoFactor(HttpSession session, Model model) {
-        String username = (String) session.getAttribute(AUTH_USER);
-
+        String username = resolveUsername(session);
         if (username == null) {
-            var authentication = org.springframework.security.core.context.SecurityContextHolder
-                    .getContext().getAuthentication();
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return "redirect:/login";
-            }
-            username = authentication.getName();
-            session.setAttribute(AUTH_USER, username);
+            return "redirect:/login";
         }
 
         AppUser user = users.findByUsername(username).orElse(null);
-        if (user == null) return "redirect:/login";
-
-        Instant blockUntil = getInstant(session, BLOCK_UNTIL);
-        if (blockUntil != null && Instant.now().isBefore(blockUntil)) {
-            model.addAttribute("blocked", true);
-            model.addAttribute("secondsLeft",
-                    Math.max(1, Duration.between(Instant.now(), blockUntil).toSeconds()));
-            return "otp";
+        if (user == null || !user.isEnabled()) {
+            return "redirect:/login";
         }
 
-        if (!user.isTotpEnabled() && (user.getTotpSecret() == null || user.getTotpSecret().isBlank())) {
-            try {
+        Instant now = Instant.now();
+        synchronized (lockFor(username)) {
+            if (isBlocked(user, now)) {
+                addBlockInfo(model, user, now);
+                return "otp";
+            }
+
+            boolean changed = false;
+            if (user.getTotpSecret() == null || user.getTotpSecret().isBlank()) {
                 GoogleAuthenticatorKey key = totp.createKey();
                 user.setTotpSecret(key.getKey());
-                users.save(user);
-
-                String uri = totp.otpAuthUri(username, key.getKey());
-                model.addAttribute("qr", totp.qrBase64(uri));
-                model.addAttribute("secret", key.getKey());
-                model.addAttribute("setup", true);
-            } catch (Exception e) {
-                throw new IllegalStateException("Cannot create 2FA QR", e);
+                user.setTotpEnabled(false);
+                changed = true;
             }
+
+            if (changed) {
+                users.save(user);
+            }
+        }
+
+        try {
+            String uri = totp.otpAuthUri(username, user.getTotpSecret());
+            if (!user.isTotpEnabled()) {
+                model.addAttribute("qr", totp.qrBase64(uri));
+                model.addAttribute("secret", user.getTotpSecret());
+                model.addAttribute("setup", true);
+            }
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot create 2FA QR", e);
         }
 
         return "otp";
     }
 
     @PostMapping("/2fa")
-    public String verify(@RequestParam String code, HttpSession session, Model model) {
-        String username = (String) session.getAttribute(AUTH_USER);
+    public String verify(@RequestParam String code, HttpSession session) {
+        String username = resolveUsername(session);
         if (username == null) return "redirect:/login";
 
-        Instant now = Instant.now();
-        Instant blockUntil = getInstant(session, BLOCK_UNTIL);
-
-        if (blockUntil != null && now.isBefore(blockUntil)) {
-            return "redirect:/2fa?blocked";
-        }
-
         AppUser user = users.findByUsername(username).orElse(null);
-        if (user == null) return "redirect:/login";
+        if (user == null || !user.isEnabled()) return "redirect:/login";
 
-        resetExpiredWindow(session, now);
-
-        try {
-            if (code == null || !code.matches("\\d{6}")) {
-                return failedAttempt(session, now);
+        Instant now = Instant.now();
+        synchronized (lockFor(username)) {
+            if (isBlocked(user, now)) {
+                return "redirect:/2fa?blocked";
             }
 
-            int value = Integer.parseInt(code);
+            resetExpiredWindow(user, now);
 
-            if (totp.verify(user.getTotpSecret(), value)) {
+            String normalized = code == null ? "" : code.replaceAll("\\s+", "").trim();
+            boolean success = false;
+
+            if (normalized.matches("\\d{6}")) {
+                try {
+                    success = user.getTotpSecret() != null
+                            && totp.verify(user.getTotpSecret(), Integer.parseInt(normalized));
+                } catch (NumberFormatException ignored) {
+                    success = false;
+                }
+            }
+
+            if (success) {
                 user.setTotpEnabled(true);
+                clearTwoFactorFailures(user);
                 users.save(user);
-
-                session.removeAttribute(FAIL_COUNT);
-                session.removeAttribute(WINDOW_START);
-                session.removeAttribute(BLOCK_UNTIL);
                 session.setAttribute(TWO_FACTOR_OK, true);
-
                 return "redirect:/";
             }
-        } catch (NumberFormatException ignored) {
-        }
 
-        return failedAttempt(session, now);
+            int attemptsLeft = registerFailedAttempt(user, now);
+            users.save(user);
+
+            if (isBlocked(user, now)) {
+                return "redirect:/2fa?blocked";
+            }
+            return "redirect:/2fa?error&attemptsLeft=" + attemptsLeft;
+        }
     }
 
-    private String failedAttempt(HttpSession session, Instant now) {
-        int count = getInt(session, FAIL_COUNT) + 1;
-        session.setAttribute(FAIL_COUNT, count);
-
-        if (session.getAttribute(WINDOW_START) == null) {
-            session.setAttribute(WINDOW_START, now.toString());
+    private int registerFailedAttempt(AppUser user, Instant now) {
+        if (user.getTwoFactorWindowStart() == null
+                || now.isAfter(user.getTwoFactorWindowStart().plus(ATTEMPT_WINDOW))) {
+            user.setTwoFactorWindowStart(now);
+            user.setFailedTwoFactorAttempts(0);
         }
+
+        int count = user.getFailedTwoFactorAttempts() + 1;
+        user.setFailedTwoFactorAttempts(count);
 
         if (count >= MAX_ATTEMPTS) {
-            Instant until = now.plus(BLOCK_DURATION);
-            session.setAttribute(BLOCK_UNTIL, until.toString());
-            session.removeAttribute(FAIL_COUNT);
-            session.removeAttribute(WINDOW_START);
-            return "redirect:/2fa?blocked";
+            user.setTwoFactorBlockUntil(now.plus(BLOCK_DURATION));
+            return 0;
         }
-
-        return "redirect:/2fa?error&attemptsLeft=" + (MAX_ATTEMPTS - count);
+        return MAX_ATTEMPTS - count;
     }
 
-    private void resetExpiredWindow(HttpSession session, Instant now) {
-        Instant start = getInstant(session, WINDOW_START);
-        if (start != null && now.isAfter(start.plus(ATTEMPT_WINDOW))) {
-            session.removeAttribute(FAIL_COUNT);
-            session.removeAttribute(WINDOW_START);
+    private void resetExpiredWindow(AppUser user, Instant now) {
+        if (user.getTwoFactorWindowStart() != null
+                && now.isAfter(user.getTwoFactorWindowStart().plus(ATTEMPT_WINDOW))) {
+            user.setFailedTwoFactorAttempts(0);
+            user.setTwoFactorWindowStart(null);
+        }
+
+        if (user.getTwoFactorBlockUntil() != null
+                && !now.isBefore(user.getTwoFactorBlockUntil())) {
+            user.setTwoFactorBlockUntil(null);
+            user.setFailedTwoFactorAttempts(0);
+            user.setTwoFactorWindowStart(null);
         }
     }
 
-    private int getInt(HttpSession session, String name) {
-        Object value = session.getAttribute(name);
-        return value instanceof Integer i ? i : 0;
+    private boolean isBlocked(AppUser user, Instant now) {
+        return user.getTwoFactorBlockUntil() != null
+                && now.isBefore(user.getTwoFactorBlockUntil());
     }
 
-    private Instant getInstant(HttpSession session, String name) {
-        Object value = session.getAttribute(name);
-        if (value instanceof String s) {
-            try {
-                return Instant.parse(s);
-            } catch (Exception ignored) {
-            }
-        }
-        return null;
+    private void clearTwoFactorFailures(AppUser user) {
+        user.setFailedTwoFactorAttempts(0);
+        user.setTwoFactorWindowStart(null);
+        user.setTwoFactorBlockUntil(null);
+    }
+
+    private void addBlockInfo(Model model, AppUser user, Instant now) {
+        model.addAttribute("blocked", true);
+        model.addAttribute("secondsLeft",
+                Math.max(1, Duration.between(now, user.getTwoFactorBlockUntil()).toSeconds()));
+    }
+
+    private String resolveUsername(HttpSession session) {
+        String username = (String) session.getAttribute(AUTH_USER);
+        if (username != null) return username;
+
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) return null;
+
+        username = authentication.getName();
+        session.setAttribute(AUTH_USER, username);
+        return username;
+    }
+
+    private Object lockFor(String username) {
+        return userLocks.computeIfAbsent(username, ignored -> new Object());
     }
 }

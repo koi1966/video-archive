@@ -32,7 +32,7 @@
 <label>По батькові</label><input name="patronymic" th:value="${user.patronymic}" maxlength="100">
 <label>Район відеозапису</label>
 <select name="workAreaId">
-<option value="">Не выбран</option>
+<option value="">Не вибрано</option>
 <option th:each="wa : ${workAreas}" th:value="${wa.id}" th:text="${wa.name}" th:selected="${user.workAreaId == wa.id}"></option>
 </select>
 <label>Роль</label><select name="role"><option value="USER" th:selected="${user.role == 'USER'}">USER</option><option value="ADMIN" th:selected="${user.role == 'ADMIN'}">ADMIN</option></select>
