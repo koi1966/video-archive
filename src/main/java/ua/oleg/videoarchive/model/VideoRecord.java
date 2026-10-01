@@ -35,7 +35,7 @@ public class VideoRecord {
      */
     public String getFileProvider() { return fileProvider; }
     /**
-     * Встановлює сведения о том, кто передал файлы.
+     * Встановлює про те, хто передав файлы.
      * @param fileProvider параметр методу
      */
     public void setFileProvider(String fileProvider) { this.fileProvider = fileProvider; }

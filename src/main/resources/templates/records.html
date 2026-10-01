@@ -8,14 +8,14 @@
 <div class="box wide">
 <h1>Записи</h1>
 <form method="get" class="search">
-<input name="provider" placeholder="Кто дал файлы" th:value="${provider}">
-<input name="company" placeholder="Фирма" th:value="${company}">
-<input name="title" placeholder="Название" th:value="${title}">
+<input name="provider" placeholder="Хто надав відеофайли" th:value="${provider}">
+<input name="company" placeholder="Фірма" th:value="${company}">
+<input name="title" placeholder="Назва" th:value="${title}">
 <input type="date" name="date" th:value="${date}">
 <button>Пошук</button><a class="button" href="/records">Очистити</a>
 </form>
 <table>
-<thead><tr><th>Дата</th><th>Хто ндав файли</th><th>Фірма</th><th>Назва</th><th>Відео</th><th></th></tr></thead>
+<thead><tr><th>Дата</th><th>Хто надав файли</th><th>Фірма</th><th>Назва</th><th>Відео</th><th></th></tr></thead>
 <tbody>
 <tr th:each="r : ${records}">
 <td th:text="${r.recordDate}"></td>

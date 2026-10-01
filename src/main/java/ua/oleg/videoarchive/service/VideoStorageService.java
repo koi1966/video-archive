@@ -236,11 +236,11 @@ public class VideoStorageService {
      * Цей метод НЕ створює каталог.
      *
      * Тому його можна безпечно використовувати
-    /**
+     /**
      * Визначає фізичний шлях VideoFile. Для нових файлів використовує збережений storagePatch, для проміжних даних — workAreaId, а для старих файлів — legacyRoot.
      * @param workArea робоча зона, у каталог яку записується файл
      * @return результат роботи методу (всередині)
-     */
+     *
      * внутри resolve().
      */
     private Path getRoot(WorkArea workArea) {
