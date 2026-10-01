@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Райони</title>
+    <title>Рабочие области</title>
 
     <style>
         body {
@@ -77,15 +77,15 @@
 
 <body>
 
-<h1>Райони</h1>
+<h1>Рабочие области</h1>
 
 <div class="top">
     <a class="button" href="/work-areas/new">
-        Додати район
+        Добавить рабочую область
     </a>
 
     <a class="button" href="/users">
-        Користувачі
+        Пользователи
     </a>
 </div>
 
@@ -93,9 +93,9 @@
 
     <thead>
     <tr>
-        <th>Район</th>
-        <th>Patch — шлях до відеофайлу</th>
-        <th>Виберіть дію</th>
+        <th>Рабочая область</th>
+        <th>Patch — путь к видеофайлам</th>
+        <th>Действия</th>
     </tr>
     </thead>
 
@@ -116,7 +116,7 @@
 
             <span th:if="${area.patch == null or area.patch.isBlank()}"
                   class="empty">
-                Шлях не вказаний
+                Путь не задан
             </span>
 
         </td>
@@ -125,13 +125,13 @@
 
             <a class="button"
                th:href="@{/work-areas/{id}/edit(id=${area.id})}">
-                Виправити
+                Изменить
             </a>
 
             <form th:action="@{/work-areas/{id}/delete(id=${area.id})}"
                   method="post"
                   style="display:inline;"
-                  onsubmit="return confirm('Видалити арайон?');">
+                  onsubmit="return confirm('Удалить эту рабочую область?');">
 
                 <button type="submit" class="delete">
                     Удалить
@@ -145,7 +145,7 @@
 
     <tr th:if="${#lists.isEmpty(workAreas)}">
         <td colspan="3" class="empty">
-            Район Житомирської області відсутній.
+            Рабочие области отсутствуют.
         </td>
     </tr>
 

@@ -24,11 +24,29 @@ public class ChunkUploadService {
     private final VideoRecordService records;
     private final VideoStorageService storage;
 
+    /**
+     * Створює сервіс chunk-завантаження і отримує сервіс записей і фізичного зберігання видео.
+     * @param records параметр методу
+     * @param storage параметр методу
+     */
     public ChunkUploadService(VideoRecordService records, VideoStorageService storage) {
         this.records = records;
         this.storage = storage;
     }
 
+    /**
+     * Приймає одну частину великого відеофайлу, серіалізує операції для конкретного uploadId і передає перевірку та запис у внутрішній метод. Повертає true після збирання останньої частини.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @param uploadId унікальний ідентифікатор поточної chunk-завантаження
+     * @param originalName параметр методу
+     * @param totalSize повний розмір вихідного файлу у байтах
+     * @param chunkNumber номер поточної частини, починаючи з нуля
+     * @param totalChunks загальна кількість частин
+     * @param chunk поточна частина великого файлу
+     * @param workArea робоча зона, у каталог яку записується файл
+     * @return результат роботи методу (boolean)
+     * @throws IOException якщо операція введення-виведення не може быть выполнена
+     */
     public boolean writeChunk(
             String recordId,
             String uploadId,
@@ -54,6 +72,17 @@ public class ChunkUploadService {
         }
     }
 
+    /**
+     * Перевіряє коректність параметрів chunk-завантаження: номер частини, кількість частин, розмір файлу, розмір поточного chunk, робочу зону та наявність необхідних ідентифікаторів.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @param uploadId унікальний ідентифікатор поточної chunk-завантаження
+     * @param originalName параметр методу
+     * @param totalSize повний розмір вихідного файлу у байтах
+     * @param chunkNumber номер поточної частини, починаючи з нуля
+     * @param totalChunks загальна кількість частин
+     * @param chunk поточна частина великого файлу
+     * @param workArea робоча зона, у каталог яку записується файл
+     */
     private void validateParameters(
             String recordId, String uploadId, String originalName, long totalSize,
             int chunkNumber, int totalChunks, MultipartFile chunk, WorkArea workArea) {
@@ -77,6 +106,19 @@ public class ChunkUploadService {
         }
     }
 
+    /**
+     * Записує chunk у тимчасовий `.part`-файл за розрахованим зміщенням через RandomAccessFile. Після останнього chunk перевіряє повний розмір, перейменовує тимчасовий файл на UUID-файл і додає VideoFile до відповідної VideoRecord.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @param uploadId унікальний ідентифікатор поточної chunk-завантаження
+     * @param originalName параметр методу
+     * @param totalSize повний розмір вихідного файлу у байтах
+     * @param chunkNumber номер поточної частини, починаючи з нуля
+     * @param totalChunks загальна кількість частин
+     * @param chunk поточна частина великого файлу
+     * @param workArea робоча зона, у каталог яку записується файл
+     * @return результат роботи методу (boolean)
+     * @throws IOException якщо операція введення-виведення не може быть выполнена
+     */
     private boolean writeChunkInternal(
             String recordId, String uploadId, String originalName, long totalSize,
             int chunkNumber, int totalChunks, MultipartFile chunk, WorkArea workArea)

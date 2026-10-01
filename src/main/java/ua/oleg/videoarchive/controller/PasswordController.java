@@ -16,16 +16,31 @@ public class PasswordController {
     private final AppUserRepository users;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Створює контролер зміни пароля та отримує зі Spring-контейнера репозиторій користувачів і PasswordEncoder.
+     * @param users параметр методу
+     * @param passwordEncoder параметр методу
+     */
     public PasswordController(AppUserRepository users, PasswordEncoder passwordEncoder) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Виконує операцію `GetMapping` у рамках класу `PasswordController`.
+     * @param form( параметр методу
+     * @return результат роботи методу (@)
+     */
     @GetMapping("/change-password")
     public String form() {
         return "change-password";
     }
 
+    /**
+     * Виконує операцію `PostMapping` у рамках класу `PasswordController`.
+     * @param session поточна HTTP-сесія
+     * @return результат роботи методу (@)
+     */
     @PostMapping("/change-password")
     public String change(
             @RequestParam String currentPassword,

@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title th:text="${workArea.id == null ? 'Додати район' : 'Редагувати район'}">
+    <title th:text="${workArea.id == null ? 'Добавление рабочей области' : 'Редактирование рабочей области'}">
         Рабочая область
     </title>
 
@@ -72,7 +72,7 @@
 
 <body>
 
-<h1 th:text="${workArea.id == null ? 'Додати район' : 'Редагувати район'}">
+<h1 th:text="${workArea.id == null ? 'Добавление рабочей области' : 'Редактирование рабочей области'}">
     Рабочая область
 </h1>
 
@@ -95,7 +95,7 @@
            type="text"
            required
            th:value="${workArea.name}"
-           placeholder="Наприклад: м. Житомир">
+           placeholder="Например: м. Житомир">
 
     <label for="patch">
         Patch — путь к видеофайлам
@@ -105,10 +105,10 @@
            name="patch"
            type="text"
            th:value="${workArea.patch}"
-           placeholder="Приклад: D:\VideoArchive\Zhytomyr">
+           placeholder="Например: D:\VideoArchive\Zhytomyr">
 
     <div class="hint">
-        Вкажіть каталог на комп'ютері, де зберігатимуться відеофайли цього ройону.
+        Укажите каталог на компьютере, где будут храниться видеофайлы этой рабочей области.
     </div>
 
     <div class="buttons">
@@ -146,20 +146,20 @@
            name="patch"
            type="text"
            th:value="${workArea.patch}"
-           placeholder="Приклад: D:\VideoArchive\Zhytomyr">
+           placeholder="Например: D:\VideoArchive\Zhytomyr">
 
     <div class="hint">
-        Приклад:
+        Например:
         D:\VideoArchive\Zhytomyr
     </div>
 
     <div class="buttons">
         <button type="submit">
-            Зберегти
+            Сохранить
         </button>
 
         <a href="/work-areas">
-            Відміна
+            Отмена
         </a>
     </div>
 

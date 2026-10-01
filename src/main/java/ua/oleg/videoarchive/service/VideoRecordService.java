@@ -17,11 +17,24 @@ public class VideoRecordService {
     private final VideoRecordRepository repository;
     private final VideoStorageService storage;
 
+    /**
+     * Створює сервіс записів відеоархіву та отримує MongoDB-репозиторій записів і сервіс фізичного зберігання.
+     * @param repository репозиторій MongoDB
+     * @param storage параметр методу
+     */
     public VideoRecordService(VideoRecordRepository repository, VideoStorageService storage) {
         this.repository = repository;
         this.storage = storage;
     }
 
+    /**
+     * Виконує пошук за полями provider, company, title і date у пам’яті після завантаження записів із MongoDB; текстові поля порівнюються без урахування регістру, результат сортується за датою.
+     * @param provider фільтр за відправником файлів
+     * @param company фільтр за назвою фірми
+     * @param title фільтр за назвою запису
+     * @param date фільтр за датою
+     * @return результат роботи методу (List<VideoRecord>)
+     */
     public List<VideoRecord> search(String provider, String company, String title, LocalDate date) {
         Stream<VideoRecord> stream = repository.findAll().stream();
 
@@ -39,21 +52,44 @@ public class VideoRecordService {
                 .toList();
     }
 
+    /**
+     * Перевіряє, чи містить значення шуканий підрядок без урахування регістру.
+     * @param value значення, яке необходимо обработать
+     * @param search параметр методу
+     * @return результат роботи методу (boolean)
+     */
     private boolean contains(String value, String search) {
         return value != null && value.toLowerCase(Locale.ROOT)
                 .contains(search.toLowerCase(Locale.ROOT));
     }
 
+    /**
+     * Підготовляє список videos, якщо він відсутній, і зберігає VideoRecord через MongoDB repository.
+     * @param record об’єкт VideoRecord для сохранения
+     * @return результат роботи методу (VideoRecord)
+     */
     public VideoRecord save(VideoRecord record) {
         if (record.getVideos() == null) record.setVideos(new ArrayList<>());
         return repository.save(record);
     }
 
+    /**
+     * Знаходить VideoRecord за ID або викидає NoSuchElementException, якщо запис відсутній.
+     * @param id ідентифікатор об’єкта
+     * @return результат роботи методу (VideoRecord)
+     */
     public VideoRecord find(String id) {
         return repository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Record not found"));
     }
 
+    /**
+     * Для кожного непорожнього MultipartFile зберігає фізичний файл через VideoStorageService, додає отриманий VideoFile до запису та зберігає оновлений запис у MongoDB.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @param files масив завантажуваних відеофайлів
+     * @param workArea робоча зона, у каталог яку записується файл
+     * @throws IOException якщо операція введення-виведення не може быть выполнена
+     */
     public void addVideos(String recordId, MultipartFile[] files, WorkArea workArea) throws IOException {
         VideoRecord record = find(recordId);
         if (files != null) {
@@ -66,6 +102,12 @@ public class VideoRecordService {
         repository.save(record);
     }
 
+    /**
+     * Знаходить конкретний VideoFile всередині зазначеної VideoRecord за videoId.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @param videoId ідентифікатор VideoFile всередині запису
+     * @return результат роботи методу (VideoFile)
+     */
     public VideoFile findVideo(String recordId, String videoId) {
         return find(recordId).getVideos().stream()
                 .filter(v -> videoId.equals(v.getId()))
@@ -73,6 +115,12 @@ public class VideoRecordService {
                 .orElseThrow(() -> new NoSuchElementException("Video not found"));
     }
 
+    /**
+     * Видаляє фізичний файл через VideoStorageService, видаляє його метадані зі списку запису та зберігає запис у MongoDB.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @param videoId ідентифікатор VideoFile всередині запису
+     * @throws IOException якщо операція введення-виведення не може быть выполнена
+     */
     public void deleteVideo(String recordId, String videoId) throws IOException {
         VideoRecord record = find(recordId);
         VideoFile video = findVideo(recordId, videoId);
@@ -81,6 +129,11 @@ public class VideoRecordService {
         repository.save(record);
     }
 
+    /**
+     * Видаляє всі фізичні відеофайли запису, після чого видаляє сам документ VideoRecord із MongoDB.
+     * @param recordId ідентифікатор запису VideoRecord
+     * @throws IOException якщо операція введення-виведення не може быть выполнена
+     */
     public void deleteRecord(String recordId) throws IOException {
         VideoRecord record = find(recordId);
         for (VideoFile video : record.getVideos()) {

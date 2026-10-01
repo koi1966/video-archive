@@ -27,12 +27,22 @@ public class TwoFactorController {
     private final TotpService totp;
     private final ConcurrentHashMap<String, Object> userLocks = new ConcurrentHashMap<>();
 
+    /**
+     * Створює контролер двофакторної автентифікації та отримує репозиторій користувачів і TOTP-сервіс.
+     * @param users параметр методу
+     * @param totp параметр методу
+     */
     public TwoFactorController(AppUserRepository users,
                                TotpService totp) {
         this.users = users;
         this.totp = totp;
     }
 
+    /**
+     * Виконує операцію `GetMapping` у рамках класу `TwoFactorController`.
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (@)
+     */
     @GetMapping("/2fa")
     public String twoFactor(HttpSession session, Model model) {
         String username = resolveUsername(session);
@@ -79,6 +89,11 @@ public class TwoFactorController {
         return "otp";
     }
 
+    /**
+     * Виконує операцію `PostMapping` у рамках класу `TwoFactorController`.
+     * @param session поточна HTTP-сесія
+     * @return результат роботи методу (@)
+     */
     @PostMapping("/2fa")
     public String verify(@RequestParam String code, HttpSession session) {
         String username = resolveUsername(session);
@@ -125,6 +140,12 @@ public class TwoFactorController {
         }
     }
 
+    /**
+     * Збільшує лічильник невдалих TOTP-перевірок користувача у MongoDB. Після досягнення MAX_ATTEMPTS встановлює час блокування та скидає вікно спроб.
+     * @param user параметр методу
+     * @param now параметр методу
+     * @return результат роботи методу (int)
+     */
     private int registerFailedAttempt(AppUser user, Instant now) {
         if (user.getTwoFactorWindowStart() == null
                 || now.isAfter(user.getTwoFactorWindowStart().plus(ATTEMPT_WINDOW))) {
@@ -142,6 +163,11 @@ public class TwoFactorController {
         return MAX_ATTEMPTS - count;
     }
 
+    /**
+     * Скидає старе вікно підрахунку помилок, якщо його час минув.
+     * @param user параметр методу
+     * @param now параметр методу
+     */
     private void resetExpiredWindow(AppUser user, Instant now) {
         if (user.getTwoFactorWindowStart() != null
                 && now.isAfter(user.getTwoFactorWindowStart().plus(ATTEMPT_WINDOW))) {
@@ -157,23 +183,44 @@ public class TwoFactorController {
         }
     }
 
+    /**
+     * Перевіряє, чи діє для користувача поточне блокування TOTP.
+     * @param user параметр методу
+     * @param now параметр методу
+     * @return результат роботи методу (boolean)
+     */
     private boolean isBlocked(AppUser user, Instant now) {
         return user.getTwoFactorBlockUntil() != null
                 && now.isBefore(user.getTwoFactorBlockUntil());
     }
 
+    /**
+     * Очищає лічильник невдалих двофакторних спроб, час початку вікна та час блокування після успішної автентифікації.
+     * @param user параметр методу
+     */
     private void clearTwoFactorFailures(AppUser user) {
         user.setFailedTwoFactorAttempts(0);
         user.setTwoFactorWindowStart(null);
         user.setTwoFactorBlockUntil(null);
     }
 
+    /**
+     * Додає до Model інформацію про чинне блокування та час очікування, що залишився.
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @param user параметр методу
+     * @param now параметр методу
+     */
     private void addBlockInfo(Model model, AppUser user, Instant now) {
         model.addAttribute("blocked", true);
         model.addAttribute("secondsLeft",
                 Math.max(1, Duration.between(now, user.getTwoFactorBlockUntil()).toSeconds()));
     }
 
+    /**
+     * Отримує логін користувача з HTTP-сесії; якщо його там немає, намагається отримати його з поточної Spring Security Authentication та зберігає у сесії.
+     * @param session поточна HTTP-сесія
+     * @return результат роботи методу (String)
+     */
     private String resolveUsername(HttpSession session) {
         String username = (String) session.getAttribute(AUTH_USER);
         if (username != null) return username;
@@ -187,6 +234,11 @@ public class TwoFactorController {
         return username;
     }
 
+    /**
+     * Повертає об’єкт синхронізації, унікальний для зазначеного логіна, щоб паралельні запити одного користувача не могли одночасно змінювати лічильник помилок TOTP.
+     * @param username логін користувача
+     * @return результат роботи методу (Object)
+     */
     private Object lockFor(String username) {
         return userLocks.computeIfAbsent(username, ignored -> new Object());
     }

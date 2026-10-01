@@ -12,6 +12,13 @@ import java.io.IOException;
 
 @Component
 public class TwoFactorGuardFilter extends OncePerRequestFilter {
+    /**
+     * Контролює другий етап автентифікації після успішної перевірки логіна та пароля. Якщо користувач ще не встановив прапорець TWO_FACTOR_OK у HTTP-сесії, звичайні запити перенаправляються на `/2fa`; AJAX-запити отримують HTTP 403. Публічні службові шляхи пропускаються.
+     * @param request HTTP-запрос
+     * @param response HTTP-ответ
+     * @param filterChain ланцюжок Spring Security-фильтров
+     * @throws ServletException якщо обробка servlet-фільтра завершилась помилкою
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {

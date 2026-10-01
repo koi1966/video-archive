@@ -21,14 +21,20 @@ import java.util.UUID;
 public class VideoStorageService {
 
     /**
-     * Старый общий каталог.
-     * Используется только для старых VideoFile,
-     * у которых нет workAreaId и storagePatch.
+     * Старий загальний каталог.
+     * Використовується лише для старих VideoFile,
+     * які не мають workAreaId і storagePatch.
      */
     private final Path legacyRoot;
 
     private final WorkAreaRepository workAreas;
 
+    /**
+     * Створює сервіс фізичного зберігання відео. Нормалізує legacy-каталог із `video.storage.path`, створює його та отримує WorkAreaRepository для визначення шляхів.
+     * @param storagePath параметр методу
+     * @param workAreas параметр методу
+     * @throws IOException якщо операція введення-виведення не може быть выполнена
+     */
     public VideoStorageService(
             @Value("${video.storage.path}") String storagePath,
             WorkAreaRepository workAreas) throws IOException {
@@ -43,12 +49,12 @@ public class VideoStorageService {
     }
 
     /**
-     * Сохраняет видео в patch выбранного WorkArea.
+     * Зберігає видео у patch вибраного WorkArea.
      *.
-     * Для обычного пользователя WorkArea определяется
-     * контроллером по текущему пользователю.
+     * Для звичайного користувача WorkArea визначається
+     * контролером за поточним користувачем.
      *.
-     * Для администратора WorkArea передается выбранный им.
+     * Для адміністратора передається вибрана ним WorkArea.
      */
     public VideoFile store(
             MultipartFile file,
@@ -105,11 +111,11 @@ public class VideoStorageService {
 
         /*
          * В VideoFile сохраняем:
-         * .
+         *
          * workAreaId  - район, которому принадлежит видео
          * storagePatch - patch, который использовался
          * relativePath - имя файла относительно patch
-         * .
+         *
          * Благодаря storagePatch изменение patch
          * района в будущем не сломает старые видео.
          */
@@ -127,18 +133,18 @@ public class VideoStorageService {
     }
 
     /**
-     * Возвращает физический путь видео.
-     * .
-     * Новые видео используют storagePatch,
-     * который был сохранён в момент загрузки.
-     * .
-     * Поэтому изменение WorkArea.patch влияет
-     * только на НОВЫЕ видео.
-     * .
-     * Старые видео продолжают использовать старый patch.
-     * .
-     * Старые VideoFile без workAreaId и storagePatch
-     * используют video.storage.path.
+     * Повертає фізичний шлях відео.
+     *
+     * Нові відео використовують storagePatch,
+     * який було збережено у момент завантаження.
+     *
+     * Тому зміна WorkArea.patch впливає
+     * лише на НОВІ відео.
+     *
+     * Старі відео продовжують використовувати старий patch.
+     *
+     * Старі VideoFile без workAreaId і storagePatch
+     * використовують video.storage.path.
      */
     public Path resolve(VideoFile video) {
 
@@ -156,7 +162,7 @@ public class VideoStorageService {
 
         /*
          * В первую очередь используем storagePatch.
-         * .
+         *
          * Это важно:
          * если администратор изменил patch района,
          * старое видео должно остаться доступным
@@ -172,10 +178,10 @@ public class VideoStorageService {
 
             /*
              * Совместимость с промежуточными данными:
-             * .
+             *
              * workAreaId уже есть,
              * но storagePatch ещё отсутствует.
-             * .
+             *
              * Здесь НЕ вызываем requireRoot(),
              * потому что resolve() не должен создавать каталог
              * и не должен выбрасывать checked IOException.
@@ -193,27 +199,27 @@ public class VideoStorageService {
     }
 
     /**
-     * Удаляет физический видеофайл.
+     * Видаляє фізичний відеофайл.
      */
     public void delete(VideoFile video) throws IOException {
         Files.deleteIfExists(resolve(video));
     }
 
     /**
-     * Используется ChunkUploadService.
-     * .
-     * Возвращает patch выбранного WorkArea
-     * и создаёт каталог, если его ещё нет.
+     * Використовується ChunkUploadService.
+     *
+     * Повертає patch вибраного WorkArea
+     * і створює каталог, якщо його ще немає.
      */
     public Path rootFor(WorkArea workArea) throws IOException {
         return requireRoot(workArea);
     }
 
     /**
-     * Проверяет WorkArea, получает его patch
-     * и создаёт каталог.
-     * .
-     * Этот метод используется при ЗАПИСИ файла.
+     * Перевіряє WorkArea, отримує его patch
+     * і створює каталог.
+     *
+     * Цей метод використовується під час ЗАПИСУ файлу.
      */
     private Path requireRoot(WorkArea workArea) throws IOException {
 
@@ -225,11 +231,16 @@ public class VideoStorageService {
     }
 
     /**
-     * Получает путь из WorkArea.
-     * .
-     * Этот метод НЕ создаёт каталог.
-     *.
-     * Поэтому его можно безопасно использовать
+     * Отримує шлях із WorkArea.
+     *
+     * Цей метод НЕ створює каталог.
+     *
+     * Тому його можна безпечно використовувати
+    /**
+     * Визначає фізичний шлях VideoFile. Для нових файлів використовує збережений storagePatch, для проміжних даних — workAreaId, а для старих файлів — legacyRoot.
+     * @param workArea робоча зона, у каталог яку записується файл
+     * @return результат роботи методу (всередині)
+     */
      * внутри resolve().
      */
     private Path getRoot(WorkArea workArea) {
@@ -260,7 +271,7 @@ public class VideoStorageService {
     }
 
     /**
-     * Преобразует patch в нормализованный абсолютный Path.
+     * Перетворює patch на нормалізований абсолютний Path.
      */
     private Path getRootByPatch(String patch) {
 
@@ -284,10 +295,10 @@ public class VideoStorageService {
     }
 
     /**
-     * Безопасно формирует путь к файлу.
+     * Безпечно формує шлях до файлу.
      *
-     * relativePath не может вывести нас
-     * за пределы root.
+     * relativePath не може вивести нас
+     * за межі root.
      */
     private Path safeResolve(
             Path root,

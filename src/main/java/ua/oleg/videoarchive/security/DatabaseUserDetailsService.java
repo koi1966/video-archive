@@ -8,10 +8,19 @@ import ua.oleg.videoarchive.repository.AppUserRepository;
 public class DatabaseUserDetailsService implements UserDetailsService {
     private final AppUserRepository repository;
 
+    /**
+     * Створює UserDetailsService та отримує репозиторій користувачів MongoDB.
+     * @param repository репозиторій MongoDB
+     */
     public DatabaseUserDetailsService(AppUserRepository repository) {
         this.repository = repository;
     }
 
+    /**
+     * Шукає користувача за логіном у MongoDB та перетворює AppUser на Spring Security UserDetails. Враховує пароль, enabled і роль користувача. Якщо користувача не знайдено, викидає UsernameNotFoundException.
+     * @param username логін користувача
+     * @return результат роботи методу (UserDetails)
+     */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         var user = repository.findByUsername(username)

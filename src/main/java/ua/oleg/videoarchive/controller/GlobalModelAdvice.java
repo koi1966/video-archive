@@ -6,6 +6,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice
 public class GlobalModelAdvice {
+    /**
+     * Виконує операцію `ModelAttribute` у рамках класу `GlobalModelAdvice`.
+     * @param authentication дані поточної автентифікації
+     * @return результат роботи методу (@)
+     */
     @ModelAttribute("isAdmin")
     public boolean isAdmin(Authentication authentication) {
         return authentication != null

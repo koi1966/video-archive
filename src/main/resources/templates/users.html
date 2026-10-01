@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head><meta charset="UTF-8"><title>Користувачі</title><link rel="stylesheet" href="/css/style.css"></head>
+<head><meta charset="UTF-8"><title>Пользователи</title><link rel="stylesheet" href="/css/style.css"></head>
 <body>
-<nav><b>Відеоархів</b><a href="/">Головна</a><a href="/records">Записи</a><a href="/users">Користувачі</a><a href="/work-areas">Райони відеозапису</a><a href="/change-password">Змінити пароль</a>
+<nav><b>Відеоархів</b><a href="/">Головна</a><a href="/records">Записи</a><a href="/users">Користувачі</a><a href="/work-areas">Районы відеозапису</a><a href="/change-password">Змінити пароль</a>
 <form method="post" action="/logout"><input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"><button>Вихід</button></form></nav>
 <div class="box wide">
 <h1>Користувачі</h1>
 <p><a class="button" href="/users/new">Додати користувача</a> <a class="button" href="/work-areas">Курування районами</a></p>
 <table>
-<thead><tr><th>Прізвище</th><th>Ім'я</th><th>По батькові</th><th>Логин</th><th>Район відеозйомки</th><th>Шлях збереження (patch)</th><th>Роль</th><th>2FA</th><th>Статус</th><th>Дія</th></tr></thead>
+<thead><tr><th>Прізвище</th><th>Ім'я</th><th>По батькові</th><th>Логин</th><th>Район відеозйомки</th><th>Шляз збереження (patch)</th><th>Роль</th><th>2FA</th><th>Статус</th><th>Дія</th></tr></thead>
 <tbody>
 <tr th:each="u : ${users}">
 <td th:text="${u.surname}"></td>

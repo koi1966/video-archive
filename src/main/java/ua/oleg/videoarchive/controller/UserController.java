@@ -24,6 +24,13 @@ public class UserController {
     private final PasswordEncoder passwordEncoder;
     private final TotpService totp;
 
+    /**
+     * Створює контролер управления пользователями і отримує репозитории пользователей/робочих зон, PasswordEncoder і TOTP-сервіс.
+     * @param users параметр методу
+     * @param workAreas параметр методу
+     * @param passwordEncoder параметр методу
+     * @param totp параметр методу
+     */
     public UserController(AppUserRepository users,
                           WorkAreaRepository workAreas,
                           PasswordEncoder passwordEncoder,
@@ -34,6 +41,11 @@ public class UserController {
         this.totp = totp;
     }
 
+    /**
+     * Загружает пользователей і робочі зони, сопоставляет workAreaId користувача з об’єктом WorkArea і формує рядка UserRow для таблиці.
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (String)
+     */
     @GetMapping
     public String list(Model model) {
         List<WorkArea> areas = workAreas.findAll();
@@ -52,6 +64,11 @@ public class UserController {
         return "users";
     }
 
+    /**
+     * Виконує операцію `GetMapping` у рамках класу `UserController`.
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (@)
+     */
     @GetMapping("/new")
     public String newUser(Model model) {
         AppUser user = new AppUser();
@@ -61,6 +78,21 @@ public class UserController {
         return "user-form";
     }
 
+    /**
+     * Перевіряє логін, уникальность, пароль, роль і робочу зону; хэширует пароль BCrypt, створює TOTP-секрет і зберігає нового користувача у MongoDB. Після цього переводит администратора на настройку 2FA користувача.
+     * @param username логін користувача
+     * @param password новый пароль під час создании користувача
+     * @param confirmPassword підтвердження нового пароля
+     * @param role роль користувача USER або ADMIN
+     * @param enabled ознака активного облікового запису
+     * @param surname прізвище користувача
+     * @param firstName ім’я користувача
+     * @param patronymic за батькові користувача
+     * @param workAreaId ідентифікатор робочої зони користувача
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (String)
+     * @throws Exception якщо операція налаштування не може быть выполнена
+     */
     @PostMapping
     public String create(
             @RequestParam String username,
@@ -117,6 +149,12 @@ public class UserController {
         return "redirect:/users/" + user.getId() + "/2fa-setup";
     }
 
+    /**
+     * Загружает существующего користувача і связанные дані робочих зон для формы редактирования.
+     * @param id ідентифікатор об’єкта
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (String)
+     */
     @GetMapping("/{id}/edit")
     public String edit(@PathVariable String id, Model model) {
         AppUser user = users.findById(id).orElseThrow();
@@ -124,6 +162,18 @@ public class UserController {
         return "user-form";
     }
 
+    /**
+     * Изменяет профильные поля користувача: роль, enabled, фамилию, ім’я, за батькові і робочу зону. Пароль і TOTP-секрет під час обычном редактировании не змінюються.
+     * @param id ідентифікатор об’єкта
+     * @param role роль користувача USER або ADMIN
+     * @param enabled ознака активного облікового запису
+     * @param surname прізвище користувача
+     * @param firstName ім’я користувача
+     * @param patronymic за батькові користувача
+     * @param workAreaId ідентифікатор робочої зони користувача
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (String)
+     */
     @PostMapping("/{id}/edit")
     public String update(
             @PathVariable String id,
@@ -161,6 +211,14 @@ public class UserController {
         return "redirect:/users";
     }
 
+    /**
+     * Встановлює пользователю новый пароль після перевірки длины і подтверждения, сохраняя лише его BCrypt-хеш.
+     * @param id ідентифікатор об’єкта
+     * @param newPassword новый пароль користувача
+     * @param confirmPassword підтвердження нового пароля
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @return результат роботи методу (String)
+     */
     @PostMapping("/{id}/password")
     public String resetPassword(
             @PathVariable String id,
@@ -178,6 +236,11 @@ public class UserController {
         return "redirect:/users";
     }
 
+    /**
+     * Перемикає стан enabled користувача між true і false.
+     * @param id ідентифікатор об’єкта
+     * @return результат роботи методу (String)
+     */
     @PostMapping("/{id}/toggle")
     public String toggle(@PathVariable String id) {
         AppUser user = users.findById(id).orElseThrow();
@@ -186,6 +249,12 @@ public class UserController {
         return "redirect:/users";
     }
 
+    /**
+     * Показує QR-код і секрет для первинного налаштування Google Authenticator вибраного користувача.
+     * @param id ідентифікатор об’єкта
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @throws Exception якщо операція налаштування не може быть выполнена
+     */
     @GetMapping("/{id}/2fa-setup")
     public String setup2fa(@PathVariable String id, Model model) throws Exception {
         AppUser user = users.findById(id).orElseThrow();
@@ -209,6 +278,11 @@ public class UserController {
         return "user-2fa-setup";
     }
 
+    /**
+     * Генерує новий TOTP-секрет, вимикає старий TOTP та зберігає новий секрет для користувача.
+     * @param id ідентифікатор об’єкта
+     * @return результат роботи методу (String)
+     */
     @PostMapping("/{id}/reset-2fa")
     public String reset2fa(@PathVariable String id) {
         AppUser user = users.findById(id).orElseThrow();
@@ -222,11 +296,29 @@ public class UserController {
         return "redirect:/users/" + id + "/2fa-setup";
     }
 
+    /**
+     * Заповнює Model даними, необхідними для user-form.html: користувача і список робочих зон.
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @param user параметр методу
+     */
     private void addFormData(Model model, AppUser user) {
         model.addAttribute("user", user);
         model.addAttribute("workAreas", workAreas.findAll());
     }
 
+    /**
+     * Повертає форму користувача з введеними значеннями та повідомленням про помилку, щоб адміністратору не довелося вводити дані повторно.
+     * @param model Model для передачи даних у Thymeleaf-шаблон
+     * @param username логін користувача
+     * @param role роль користувача USER або ADMIN
+     * @param enabled ознака активного облікового запису
+     * @param surname прізвище користувача
+     * @param firstName ім’я користувача
+     * @param patronymic за батькові користувача
+     * @param workAreaId ідентифікатор робочої зони користувача
+     * @param error параметр методу
+     * @return результат роботи методу (String)
+     */
     private String formError(Model model, String username, String role, boolean enabled,
                              String surname, String firstName, String patronymic,
                              String workAreaId, String error) {
@@ -247,20 +339,75 @@ public class UserController {
         private final AppUser user;
         private final WorkArea workArea;
 
+    /**
+     * Створює представлення користувача для таблиці users та пов’язує користувача з об’єктом WorkArea.
+     * @param user параметр методу
+     * @param workArea робоча зона, у каталог яку записується файл
+     */
         public UserRow(AppUser user, WorkArea workArea) {
             this.user = user;
             this.workArea = workArea;
         }
 
+    /**
+     * Повертає ідентифікатор об’єкта.
+     * @param user.getId( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getId() { return user.getId(); }
+    /**
+     * Повертає логін користувача.
+     * @param user.getUsername( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getUsername() { return user.getUsername(); }
+    /**
+     * Повертає фамилию користувача.
+     * @param user.getSurname( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getSurname() { return user.getSurname(); }
+    /**
+     * Повертає ім’я користувача.
+     * @param user.getFirstName( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getFirstName() { return user.getFirstName(); }
+    /**
+     * Повертає за батькові користувача.
+     * @param user.getPatronymic( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getPatronymic() { return user.getPatronymic(); }
+    /**
+     * Повертає роль користувача.
+     * @param user.getRole( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getRole() { return user.getRole(); }
+    /**
+     * Повертає ознака завершеного налаштування TOTP.
+     * @param user.isTotpEnabled( параметр методу
+     * @return результат роботи методу (boolean)
+     */
         public boolean isTotpEnabled() { return user.isTotpEnabled(); }
+    /**
+     * Повертає ознака активного облікового запису.
+     * @param user.isEnabled( параметр методу
+     * @return результат роботи методу (boolean)
+     */
         public boolean isEnabled() { return user.isEnabled(); }
+    /**
+     * Повертає назва робочої зони користувача або текст «Не выбран», якщо зона отсутствует.
+     * @param workArea.getName( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getWorkAreaName() { return workArea == null ? "Не выбран" : workArea.getName(); }
+    /**
+     * Повертає patch робочої зони або пустую рядок, якщо робоча зона або patch не заданы.
+     * @param workArea.getPatch( параметр методу
+     * @return результат роботи методу (String)
+     */
         public String getPatch() { return workArea == null || workArea.getPatch() == null ? "" : workArea.getPatch(); }
     }
 }

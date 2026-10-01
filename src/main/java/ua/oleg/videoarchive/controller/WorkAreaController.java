@@ -12,12 +12,16 @@ public class WorkAreaController {
 
     private final WorkAreaRepository repository;
 
+    /**
+     * Створює контролер управления рабочими зонами і отримує WorkAreaRepository.
+     * @param repository репозиторій MongoDB
+     */
     public WorkAreaController(WorkAreaRepository repository) {
         this.repository = repository;
     }
 
     /**
-     * Список рабочих областей.
+     * Список робочих областей.
      */
     @GetMapping
     public String list(Model model) {
@@ -26,7 +30,7 @@ public class WorkAreaController {
     }
 
     /**
-     * Форма добавления новой рабочей области.
+     * Форма добавления новой робочої области.
      */
     @GetMapping("/new")
     public String newWorkArea(Model model) {
@@ -38,7 +42,7 @@ public class WorkAreaController {
     }
 
     /**
-     * Создание новой рабочей области.
+     * Создание новой робочої области.
      */
     @PostMapping
     public String create(
@@ -154,7 +158,7 @@ public class WorkAreaController {
     }
 
     /**
-     * Удаление рабочей области.
+     * Удаление робочої области.
      */
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable String id) {

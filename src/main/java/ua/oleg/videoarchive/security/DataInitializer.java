@@ -13,6 +13,17 @@ import ua.oleg.videoarchive.repository.WorkAreaRepository;
 @Configuration
 public class DataInitializer {
 
+    /**
+     * Створює CommandLineRunner, який під час запуску застосунку перевіряє адміністратора,
+     * за потреби створює/оновлює його облікові дані та запускає ініціалізацію робочих зон.
+     * @param repository репозиторій пользователей MongoDB
+     * @param workAreaRepository репозиторій робочих зон
+     * @param encoder PasswordEncoder для хэширования пароля
+     * @param username логін администратора із application.properties
+     * @param password пароль администратора із application.properties
+     * @param resetPassword ознака одноразового скидання пароля і 2FA
+     * @return CommandLineRunner, виконуваний Spring Boot після запуску контексту
+     */
     @Bean
     CommandLineRunner initializeUsers(
             AppUserRepository repository,
@@ -127,6 +138,10 @@ public class DataInitializer {
         };
     }
 
+    /**
+     * Ініціалізує стандартні робочі зони, якщо колекція робочих зон порожня. Не замінює вже наявні дані.
+     * @param repository репозиторій MongoDB
+     */
     private void initializeDefaultWorkAreas(
             WorkAreaRepository repository) {
 
