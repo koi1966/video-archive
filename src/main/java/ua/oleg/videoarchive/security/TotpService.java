@@ -31,6 +31,12 @@ public class TotpService {
         return authenticator.authorize(secret, code);
     }
 
+    /**
+     * Формує стандартний `otpauth://` URI для реєстрації користувача у Google Authenticator.
+     * @param username логін користувача
+     * @param secret секрет TOTP
+     * @return результат роботи методу (String)
+     */
     public String otpAuthUri(String username, String secret) {
         return "otpauth://totp/" + url(issuer + ":" + username)
                 + "?secret=" + url(secret)
