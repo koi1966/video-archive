@@ -22,6 +22,12 @@ Edit `src/main/resources/application.properties`:
 
 ```properties
 video.storage.path=D:/VideoArchive
+
+# Initial admin account. Change the password in production.
+app.admin.reset-password=false
+app.admin.username=admin
+app.admin.password=11111111
+app.admin.issuer=VideoArchive
 ```
 
 The directory may be on a different physical disk, for example `E:/VideoArchive`.
